@@ -4,10 +4,10 @@ import { useState, useMemo } from "react";
 import { addDays, differenceInDays, format, parseISO, subDays } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProgressBar } from "@/components/bible/progress-bar";
 import { SegmentBar } from "@/components/bible/segment-bar";
-import { useFilteredLogEntries, useLogEntriesByDate } from "@/hooks/use-log-entries";
+import { useLogEntries, useFilteredLogEntries, useLogEntriesByDate } from "@/hooks/use-log-entries";
 import { useDateVerseCounts } from "@/hooks/use-date-verse-counts";
 import { useUserSettings } from "@/hooks/use-user-settings";
 import Bible from "@/lib/bible/bible";
@@ -29,14 +29,12 @@ function OutlookCard({
   avgDaily,
   daysToFinish,
   dateToFinish,
-  remaining,
 }: {
   title: string;
   description: string;
   avgDaily: number;
   daysToFinish: number;
   dateToFinish: string;
-  remaining: number;
 }) {
   return (
     <Card>
@@ -61,9 +59,15 @@ function OutlookCard({
 
 export default function ProgressPage() {
   const { data: settings } = useUserSettings();
-  const { data: entries = [], isLoading } = useFilteredLogEntries(settings?.look_back_date);
+  const { data: allEntries = [], isLoading } = useLogEntries();
+  const { data: filteredEntries = [] } = useFilteredLogEntries(settings?.look_back_date);
   const today = todayString();
   const { data: todayEntries = [] } = useLogEntriesByDate(today);
+
+  const lookBackDate = settings?.look_back_date || null;
+  const [viewMode, setViewMode] = useState<"lookback" | "all">("lookback");
+
+  const entries = viewMode === "lookback" && lookBackDate ? filteredEntries : allEntries;
   const verseCounts = useDateVerseCounts(entries);
 
   const [goalDate, setGoalDate] = useState("");
@@ -78,7 +82,12 @@ export default function ProgressPage() {
   const remainingVerses = totalVerses - readVerses;
   const percentComplete = totalVerses > 0 ? (readVerses / totalVerses) * 100 : 0;
   const dailyGoal = settings?.daily_verse_count_goal ?? 86;
-  const lookBackDate = settings?.look_back_date || null;
+
+  // Raw total verses read (including re-reads)
+  const rawTotalVersesRead = useMemo(
+    () => entries.reduce((sum, e) => sum + Bible.countRangeVerses(e.start_verse_id, e.end_verse_id), 0),
+    [entries]
+  );
 
   // OT / NT breakdown
   const books = Bible.getBooks();
@@ -169,6 +178,20 @@ export default function ProgressPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Progress</h1>
 
+      {/* View mode toggle */}
+      {lookBackDate && (
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "lookback" | "all")}>
+          <TabsList className="w-full">
+            <TabsTrigger value="lookback" className="flex-1">
+              Since {format(parseISO(lookBackDate), "MMM d, yyyy")}
+            </TabsTrigger>
+            <TabsTrigger value="all" className="flex-1">
+              All Time
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
+
       {/* Your Reading Settings */}
       <Card>
         <CardHeader className="pb-2">
@@ -190,7 +213,10 @@ export default function ProgressPage() {
         </CardHeader>
         <CardContent className="divide-y">
           <StatRow label="Total Bible Verses" value={totalVerses.toLocaleString()} />
-          <StatRow label="Verses Read" value={readVerses.toLocaleString()} />
+          {viewMode === "all" && (
+            <StatRow label="Total Verses Read" value={rawTotalVersesRead.toLocaleString()} />
+          )}
+          <StatRow label="Unique Verses Read" value={readVerses.toLocaleString()} />
           <StatRow label="Verses Remaining" value={remainingVerses.toLocaleString()} />
           <StatRow label="Percent Complete" value={`${percentComplete.toFixed(0)}%`} />
           <StatRow label="Books Completed" value={`${booksCompleted} of 66`} />
@@ -223,7 +249,6 @@ export default function ProgressPage() {
           avgDaily={historicalAvgDaily}
           daysToFinish={historicalDaysToFinish}
           dateToFinish={historicalFinishDate}
-          remaining={remainingVerses}
         />
       )}
 
@@ -234,7 +259,6 @@ export default function ProgressPage() {
         avgDaily={thirtyDayAvg}
         daysToFinish={thirtyDayDays}
         dateToFinish={thirtyDayFinish}
-        remaining={remainingVerses}
       />
 
       {/* 7-Day Outlook */}
@@ -244,7 +268,6 @@ export default function ProgressPage() {
         avgDaily={sevenDayAvg}
         daysToFinish={sevenDayDays}
         dateToFinish={sevenDayFinish}
-        remaining={remainingVerses}
       />
 
       {/* Today's Outlook */}

@@ -8,6 +8,7 @@ import {
   Calendar,
   CheckSquare,
   BarChart3,
+  LineChart,
   Settings,
   Menu,
   Sun,
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/checklist", label: "Checklist", icon: CheckSquare },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/progress", label: "Progress", icon: BarChart3 },
+  { href: "/metrics", label: "Metrics", icon: LineChart },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
