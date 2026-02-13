@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Check } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -9,12 +9,12 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { LogEntryForm } from "@/components/forms/log-entry-form";
 import { cn } from "@/lib/utils";
 import {
   useFilteredLogEntries,
   useLogEntriesByDate,
   useCreateLogEntry,
+  useDeleteLogEntry,
 } from "@/hooks/use-log-entries";
 import { useUserSettings } from "@/hooks/use-user-settings";
 import Bible from "@/lib/bible/bible";
@@ -29,13 +29,7 @@ export default function ChecklistPage() {
   const { data: todayEntries = [] } = useLogEntriesByDate(today);
   const books = Bible.getBooks();
   const createEntry = useCreateLogEntry();
-
-  const [formOpen, setFormOpen] = useState(false);
-  const [prefillValues, setPrefillValues] = useState<{
-    date: string;
-    start_verse_id: number;
-    end_verse_id: number;
-  } | undefined>(undefined);
+  const deleteEntry = useDeleteLogEntry();
 
   const ranges: VerseRange[] = entries.map((e) => ({
     startVerseId: e.start_verse_id,
@@ -50,29 +44,30 @@ export default function ChecklistPage() {
   );
   const dailyProgress = Math.min((todayVerseCount / dailyGoal) * 100, 100);
 
-  const handleChapterClick = (bookIndex: number, chapter: number) => {
-    const lastVerse = Bible.getChapterVerseCount(bookIndex, chapter);
-    setPrefillValues({
-      date: today,
-      start_verse_id: Bible.makeVerseId(bookIndex, chapter, 1),
-      end_verse_id: Bible.makeVerseId(bookIndex, chapter, lastVerse),
-    });
-    setFormOpen(true);
-  };
-
-  const handleCreate = (entry: {
-    date: string;
-    start_verse_id: number;
-    end_verse_id: number;
-  }) => {
-    createEntry.mutate(entry, {
-      onSuccess: () => {
-        setFormOpen(false);
-        setPrefillValues(undefined);
-        toast.success("Reading logged");
-      },
-      onError: (error) => toast.error(error.message),
-    });
+  const handleChapterToggle = (bookIndex: number, chapter: number, isComplete: boolean) => {
+    if (isComplete) {
+      // Uncheck: delete all entries fully contained within this chapter
+      const chStart = Bible.makeVerseId(bookIndex, chapter, 1);
+      const chEnd = Bible.makeVerseId(bookIndex, chapter, Bible.getChapterVerseCount(bookIndex, chapter));
+      const toDelete = entries.filter(
+        (e) => e.start_verse_id >= chStart && e.end_verse_id <= chEnd
+      );
+      if (toDelete.length === 0) {
+        toast.error("This chapter was logged as part of a larger range and can't be unchecked here.");
+        return;
+      }
+      toDelete.forEach((e) => {
+        deleteEntry.mutate(e.id);
+      });
+    } else {
+      // Check: create entry for the full chapter
+      const lastVerse = Bible.getChapterVerseCount(bookIndex, chapter);
+      createEntry.mutate({
+        date: today,
+        start_verse_id: Bible.makeVerseId(bookIndex, chapter, 1),
+        end_verse_id: Bible.makeVerseId(bookIndex, chapter, lastVerse),
+      });
+    }
   };
 
   if (isLoading) {
@@ -117,6 +112,7 @@ export default function ChecklistPage() {
             <AccordionItem key={book.bibleOrder} value={String(book.bibleOrder)}>
               <AccordionTrigger className="hover:no-underline">
                 <div className="flex items-center gap-3 flex-1">
+                  {isComplete && <Check className="h-4 w-4 text-primary" />}
                   <span className={cn("font-medium", isComplete && "text-primary")}>
                     {book.name}
                   </span>
@@ -146,9 +142,9 @@ export default function ChecklistPage() {
                         <button
                           key={ch}
                           type="button"
-                          onClick={() => handleChapterClick(book.bibleOrder, ch)}
+                          onClick={() => handleChapterToggle(book.bibleOrder, ch, chapterComplete)}
                           className={cn(
-                            "flex items-center justify-center w-full aspect-square rounded-md text-xs font-medium border cursor-pointer transition-colors",
+                            "relative flex items-center justify-center w-full aspect-square rounded-md text-xs font-medium border cursor-pointer transition-colors",
                             chapterComplete &&
                               "bg-primary text-primary-foreground border-primary hover:bg-primary/80",
                             chapterPartial &&
@@ -158,7 +154,11 @@ export default function ChecklistPage() {
                               "bg-muted border-border hover:bg-accent"
                           )}
                         >
-                          {ch}
+                          {chapterComplete ? (
+                            <Check className="h-3.5 w-3.5" />
+                          ) : (
+                            ch
+                          )}
                         </button>
                       );
                     }
@@ -169,18 +169,6 @@ export default function ChecklistPage() {
           );
         })}
       </Accordion>
-
-      <LogEntryForm
-        open={formOpen}
-        onOpenChange={(open) => {
-          setFormOpen(open);
-          if (!open) setPrefillValues(undefined);
-        }}
-        onSubmit={handleCreate}
-        initialValues={prefillValues}
-        hideDate={!!prefillValues}
-        isLoading={createEntry.isPending}
-      />
     </div>
   );
 }
