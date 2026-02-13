@@ -1,6 +1,6 @@
 {
-  "name": "My Bible Log",
-  "short_name": "Bible Log",
+  "name": "Bible",
+  "short_name": "Bible",
   "description": "Personal Bible reading tracker",
   "start_url": "/today",
   "display": "standalone",

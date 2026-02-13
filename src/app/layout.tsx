@@ -6,7 +6,7 @@ import { Nav } from "@/components/nav";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
-  title: "My Bible Log",
+  title: "Bible",
   description: "Personal Bible reading tracker",
   manifest: "/manifest.json",
   icons: {
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "My Bible Log",
+    title: "Bible",
   },
 };
 
