@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { SegmentBar } from "@/components/bible/segment-bar";
-import { useLogEntries } from "@/hooks/use-log-entries";
+import { useFilteredLogEntries } from "@/hooks/use-log-entries";
+import { useUserSettings } from "@/hooks/use-user-settings";
 import Bible from "@/lib/bible/bible";
 import type { VerseRange } from "@/lib/bible/bible";
 
 export default function BooksPage() {
-  const { data: entries = [], isLoading } = useLogEntries();
+  const { data: settings } = useUserSettings();
+  const { data: entries = [], isLoading } = useFilteredLogEntries(settings?.look_back_date);
   const books = Bible.getBooks();
 
   const ranges: VerseRange[] = entries.map((e) => ({

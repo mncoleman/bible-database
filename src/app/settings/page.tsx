@@ -24,6 +24,7 @@ import {
 } from "@/lib/bible/bible-apps";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
@@ -34,12 +35,14 @@ export default function SettingsPage() {
   const [dailyGoal, setDailyGoal] = useState(86);
   const [bibleVersion, setBibleVersion] = useState<string>("NASB2020");
   const [bibleApp, setBibleApp] = useState<string>("BIBLEGATEWAY");
+  const [lookBackDate, setLookBackDate] = useState<string>("");
 
   useEffect(() => {
     if (settings) {
       setDailyGoal(settings.daily_verse_count_goal);
       setBibleVersion(settings.preferred_bible_version);
       setBibleApp(settings.preferred_bible_app);
+      setLookBackDate(settings.look_back_date || "");
     }
   }, [settings]);
 
@@ -49,6 +52,7 @@ export default function SettingsPage() {
         daily_verse_count_goal: dailyGoal,
         preferred_bible_version: bibleVersion,
         preferred_bible_app: bibleApp,
+        look_back_date: lookBackDate || null,
       },
       {
         onSuccess: () => toast.success("Settings saved"),
@@ -143,6 +147,37 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Look-Back Date</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-2">
+                <Label htmlFor="lookBackDate">Only count readings from</Label>
+                <Input
+                  id="lookBackDate"
+                  type="date"
+                  value={lookBackDate}
+                  onChange={(e) => setLookBackDate(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Entries before this date will be excluded from progress
+                  calculations. Leave empty to count all readings.
+                </p>
+                {lookBackDate && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-fit"
+                    onClick={() => setLookBackDate("")}
+                  >
+                    Clear date
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           <Button onClick={handleSaveReading} disabled={updateSettings.isPending}>
             {updateSettings.isPending ? "Saving..." : "Save Settings"}
           </Button>
@@ -163,6 +198,20 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="account" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Import Data</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Import reading history from a CSV file exported from the old mybiblelog app.
+              </p>
+              <Button variant="outline" asChild>
+                <Link href="/settings/import">Import CSV</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Account</CardTitle>

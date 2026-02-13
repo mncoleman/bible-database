@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { LogEntryForm } from "@/components/forms/log-entry-form";
 import { LogEntryCard } from "@/components/bible/log-entry-card";
+import { ReadingSuggestions } from "@/components/bible/reading-suggestions";
 import {
-  useLogEntries,
+  useFilteredLogEntries,
   useLogEntriesByDate,
   useCreateLogEntry,
   useUpdateLogEntry,
@@ -23,14 +24,19 @@ import type { BibleApp, BibleVersion } from "@/lib/bible/bible-apps";
 export default function TodayPage() {
   const today = todayString();
   const { data: todayEntries = [], isLoading } = useLogEntriesByDate(today);
-  const { data: allEntries = [] } = useLogEntries();
   const { data: settings } = useUserSettings();
+  const { data: allEntries = [] } = useFilteredLogEntries(settings?.look_back_date);
   const createEntry = useCreateLogEntry();
   const updateEntry = useUpdateLogEntry();
   const deleteEntry = useDeleteLogEntry();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<LogEntry | null>(null);
+  const [prefillValues, setPrefillValues] = useState<{
+    date: string;
+    start_verse_id: number;
+    end_verse_id: number;
+  } | undefined>(undefined);
 
   const dailyGoal = settings?.daily_verse_count_goal ?? 86;
   const todayVerseCount = todayEntries.reduce(
@@ -85,6 +91,15 @@ export default function TodayPage() {
     );
   };
 
+  const handleLogSuggestion = (startVerseId: number, endVerseId: number) => {
+    setPrefillValues({
+      date: today,
+      start_verse_id: startVerseId,
+      end_verse_id: endVerseId,
+    });
+    setFormOpen(true);
+  };
+
   const handleDelete = (id: string) => {
     deleteEntry.mutate(id, {
       onSuccess: () => toast.success("Reading deleted"),
@@ -125,6 +140,14 @@ export default function TodayPage() {
         <Progress value={overallProgress} />
       </div>
 
+      {/* Suggested Reading */}
+      <ReadingSuggestions
+        entries={allEntries}
+        bibleApp={(settings?.preferred_bible_app as BibleApp) || "BIBLEGATEWAY"}
+        bibleVersion={(settings?.preferred_bible_version as BibleVersion) || "NASB2020"}
+        onLog={handleLogSuggestion}
+      />
+
       {/* Today's entries */}
       <div className="space-y-3">
         <h2 className="text-lg font-semibold">Today&apos;s Readings</h2>
@@ -150,8 +173,12 @@ export default function TodayPage() {
 
       <LogEntryForm
         open={formOpen}
-        onOpenChange={setFormOpen}
+        onOpenChange={(open) => {
+          setFormOpen(open);
+          if (!open) setPrefillValues(undefined);
+        }}
         onSubmit={handleCreate}
+        initialValues={prefillValues}
         isLoading={createEntry.isPending}
       />
 

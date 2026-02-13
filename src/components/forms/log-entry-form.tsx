@@ -54,13 +54,21 @@ export function LogEntryForm({
   useEffect(() => {
     if (initialValues) {
       setDate(initialValues.date);
-      const start = Bible.parseVerseId(initialValues.start_verse_id);
-      const end = Bible.parseVerseId(initialValues.end_verse_id);
-      setBookIndex(start.book);
-      setStartChapter(start.chapter);
-      setStartVerse(start.verse);
-      setEndChapter(end.chapter);
-      setEndVerse(end.verse);
+      if (initialValues.start_verse_id && initialValues.end_verse_id) {
+        const start = Bible.parseVerseId(initialValues.start_verse_id);
+        const end = Bible.parseVerseId(initialValues.end_verse_id);
+        setBookIndex(start.book);
+        setStartChapter(start.chapter);
+        setStartVerse(start.verse);
+        setEndChapter(end.chapter);
+        setEndVerse(end.verse);
+      } else {
+        setBookIndex(0);
+        setStartChapter(0);
+        setStartVerse(0);
+        setEndChapter(0);
+        setEndVerse(0);
+      }
     } else {
       setDate(todayString());
       setBookIndex(0);
