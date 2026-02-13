@@ -53,7 +53,7 @@ export default function ChecklistPage() {
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Daily Goal</span>
           <span>
-            {todayVerseCount} / {dailyGoal} verses
+            {todayVerseCount} / {dailyGoal} verses ({dailyProgress.toFixed(0)}%)
           </span>
         </div>
         <Progress value={dailyProgress} />

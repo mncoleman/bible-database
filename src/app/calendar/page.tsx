@@ -221,6 +221,7 @@ export default function CalendarPage() {
             ? { date: selectedDate, start_verse_id: 0, end_verse_id: 0 }
             : undefined
         }
+        hideDate
         isLoading={createEntry.isPending}
       />
 
