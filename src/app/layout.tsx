@@ -9,6 +9,10 @@ export const metadata: Metadata = {
   title: "My Bible Log",
   description: "Personal Bible reading tracker",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/apple-icon.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
