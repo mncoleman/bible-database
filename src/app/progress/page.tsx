@@ -3,14 +3,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/bible/progress-bar";
 import { SegmentBar } from "@/components/bible/segment-bar";
-import { useLogEntries } from "@/hooks/use-log-entries";
+import { useFilteredLogEntries } from "@/hooks/use-log-entries";
 import { useUserSettings } from "@/hooks/use-user-settings";
 import Bible from "@/lib/bible/bible";
 import type { VerseRange } from "@/lib/bible/bible";
 
 export default function ProgressPage() {
-  const { data: entries = [], isLoading } = useLogEntries();
   const { data: settings } = useUserSettings();
+  const { data: entries = [], isLoading } = useFilteredLogEntries(settings?.look_back_date);
 
   const ranges: VerseRange[] = entries.map((e) => ({
     startVerseId: e.start_verse_id,

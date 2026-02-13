@@ -7,19 +7,33 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { useLogEntries } from "@/hooks/use-log-entries";
+import { useFilteredLogEntries, useLogEntriesByDate } from "@/hooks/use-log-entries";
+import { useUserSettings } from "@/hooks/use-user-settings";
 import Bible from "@/lib/bible/bible";
 import type { VerseRange } from "@/lib/bible/bible";
+import { todayString } from "@/lib/bible/date-helpers";
 
 export default function ChecklistPage() {
-  const { data: entries = [], isLoading } = useLogEntries();
+  const { data: settings } = useUserSettings();
+  const { data: entries = [], isLoading } = useFilteredLogEntries(settings?.look_back_date);
+  const today = todayString();
+  const { data: todayEntries = [] } = useLogEntriesByDate(today);
   const books = Bible.getBooks();
 
   const ranges: VerseRange[] = entries.map((e) => ({
     startVerseId: e.start_verse_id,
     endVerseId: e.end_verse_id,
   }));
+
+  const dailyGoal = settings?.daily_verse_count_goal ?? 86;
+  const todayVerseCount = todayEntries.reduce(
+    (sum, entry) =>
+      sum + Bible.countRangeVerses(entry.start_verse_id, entry.end_verse_id),
+    0
+  );
+  const dailyProgress = Math.min((todayVerseCount / dailyGoal) * 100, 100);
 
   if (isLoading) {
     return (
@@ -33,6 +47,17 @@ export default function ChecklistPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Checklist</h1>
+
+      {/* Daily Goal */}
+      <div className="space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Daily Goal</span>
+          <span>
+            {todayVerseCount} / {dailyGoal} verses
+          </span>
+        </div>
+        <Progress value={dailyProgress} />
+      </div>
 
       <Accordion type="multiple" className="w-full">
         {books.map((book) => {

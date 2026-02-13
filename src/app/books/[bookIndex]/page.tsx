@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SegmentBar } from "@/components/bible/segment-bar";
 import { ProgressBar } from "@/components/bible/progress-bar";
-import { useLogEntries } from "@/hooks/use-log-entries";
+import { useFilteredLogEntries } from "@/hooks/use-log-entries";
+import { useUserSettings } from "@/hooks/use-user-settings";
 import Bible from "@/lib/bible/bible";
 import type { VerseRange } from "@/lib/bible/bible";
 
@@ -18,7 +19,8 @@ export default function BookDetailPage({
 }) {
   const { bookIndex: bookIndexStr } = use(params);
   const bookIndex = parseInt(bookIndexStr);
-  const { data: entries = [] } = useLogEntries();
+  const { data: settings } = useUserSettings();
+  const { data: entries = [] } = useFilteredLogEntries(settings?.look_back_date);
 
   const ranges: VerseRange[] = entries.map((e) => ({
     startVerseId: e.start_verse_id,

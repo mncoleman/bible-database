@@ -1,17 +1,26 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameMonth, isToday, isSameDay } from "date-fns";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameMonth, isToday } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { useLogEntries, useLogEntriesByDate } from "@/hooks/use-log-entries";
+import {
+  useLogEntries,
+  useLogEntriesByDate,
+  useCreateLogEntry,
+  useUpdateLogEntry,
+  useDeleteLogEntry,
+} from "@/hooks/use-log-entries";
 import { useDateVerseCounts } from "@/hooks/use-date-verse-counts";
 import { useUserSettings } from "@/hooks/use-user-settings";
 import Bible from "@/lib/bible/bible";
 import { LogEntryCard } from "@/components/bible/log-entry-card";
+import { LogEntryForm } from "@/components/forms/log-entry-form";
+import type { LogEntry } from "@/lib/supabase/types";
 import type { BibleApp, BibleVersion } from "@/lib/bible/bible-apps";
+import { toast } from "sonner";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -30,17 +39,61 @@ export default function CalendarPage() {
     selectedDate || ""
   );
 
+  const createEntry = useCreateLogEntry();
+  const updateEntry = useUpdateLogEntry();
+  const deleteEntry = useDeleteLogEntry();
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<LogEntry | null>(null);
+
+  const handleCreate = (entry: {
+    date: string;
+    start_verse_id: number;
+    end_verse_id: number;
+  }) => {
+    createEntry.mutate(entry, {
+      onSuccess: () => {
+        setFormOpen(false);
+        toast.success("Reading logged");
+      },
+      onError: (error) => toast.error(error.message),
+    });
+  };
+
+  const handleUpdate = (entry: {
+    date: string;
+    start_verse_id: number;
+    end_verse_id: number;
+  }) => {
+    if (!editingEntry) return;
+    updateEntry.mutate(
+      { id: editingEntry.id, ...entry },
+      {
+        onSuccess: () => {
+          setEditingEntry(null);
+          toast.success("Reading updated");
+        },
+        onError: (error) => toast.error(error.message),
+      }
+    );
+  };
+
+  const handleDelete = (id: string) => {
+    deleteEntry.mutate(id, {
+      onSuccess: () => toast.success("Reading deleted"),
+      onError: (error) => toast.error(error.message),
+    });
+  };
+
   const days = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(currentMonth);
     const allDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-    // Pad start to align to Sunday
     const startPadding = getDay(monthStart);
     const paddedDays: (Date | null)[] = Array(startPadding).fill(null);
     paddedDays.push(...allDays);
 
-    // Pad end to complete week
     while (paddedDays.length % 7 !== 0) {
       paddedDays.push(null);
     }
@@ -122,9 +175,18 @@ export default function CalendarPage() {
       {/* Selected date detail */}
       {selectedDate && (
         <Card className="p-4">
-          <h3 className="font-semibold mb-2">
-            {format(new Date(selectedDate + "T00:00:00"), "EEEE, MMMM d, yyyy")}
-          </h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold">
+              {format(new Date(selectedDate + "T00:00:00"), "EEEE, MMMM d, yyyy")}
+            </h3>
+            <Button
+              size="sm"
+              onClick={() => setFormOpen(true)}
+            >
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              Log
+            </Button>
+          </div>
           <p className="text-sm text-muted-foreground mb-3">
             {verseCounts[selectedDate] || 0} verses read
             {dailyGoal > 0 && ` / ${dailyGoal} goal`}
@@ -132,15 +194,14 @@ export default function CalendarPage() {
           {selectedDateEntries.length > 0 ? (
             <div className="space-y-2">
               {selectedDateEntries.map((entry) => (
-                <div key={entry.id} className="text-sm">
-                  {Bible.displayVerseRange(
-                    entry.start_verse_id,
-                    entry.end_verse_id
-                  )}{" "}
-                  <span className="text-muted-foreground">
-                    ({Bible.countRangeVerses(entry.start_verse_id, entry.end_verse_id)} verses)
-                  </span>
-                </div>
+                <LogEntryCard
+                  key={entry.id}
+                  entry={entry}
+                  onEdit={(e) => setEditingEntry(e)}
+                  onDelete={handleDelete}
+                  bibleApp={(settings?.preferred_bible_app as BibleApp) || "BIBLEGATEWAY"}
+                  bibleVersion={(settings?.preferred_bible_version as BibleVersion) || "NASB2020"}
+                />
               ))}
             </div>
           ) : (
@@ -150,6 +211,34 @@ export default function CalendarPage() {
           )}
         </Card>
       )}
+
+      <LogEntryForm
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        onSubmit={handleCreate}
+        initialValues={
+          selectedDate
+            ? { date: selectedDate, start_verse_id: 0, end_verse_id: 0 }
+            : undefined
+        }
+        isLoading={createEntry.isPending}
+      />
+
+      <LogEntryForm
+        open={!!editingEntry}
+        onOpenChange={(open) => !open && setEditingEntry(null)}
+        onSubmit={handleUpdate}
+        initialValues={
+          editingEntry
+            ? {
+                date: editingEntry.date,
+                start_verse_id: editingEntry.start_verse_id,
+                end_verse_id: editingEntry.end_verse_id,
+              }
+            : undefined
+        }
+        isLoading={updateEntry.isPending}
+      />
     </div>
   );
 }
