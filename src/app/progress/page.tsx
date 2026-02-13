@@ -277,27 +277,26 @@ export default function ProgressPage() {
             verses you need to read each day.
           </p>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-2">
-            <Label htmlFor="goalDate">Goal Finish Date</Label>
+        <CardContent className="divide-y">
+          <div className="flex flex-col items-center py-4">
+            <span className="text-muted-foreground text-sm mb-2">Goal Finish Date</span>
             <Input
               id="goalDate"
               type="date"
+              className="h-10 w-44 text-sm font-medium text-center"
               value={goalDate}
               min={format(addDays(new Date(), 1), "yyyy-MM-dd")}
               onChange={(e) => setGoalDate(e.target.value)}
             />
           </div>
-          <div className="divide-y">
-            <StatRow
-              label="Days to Finish by Goal"
-              value={goalDate ? goalDaysRemaining.toLocaleString() : "—"}
-            />
-            <StatRow
-              label="Verses Required Each Day"
-              value={goalDate && goalDaysRemaining > 0 ? goalVersesPerDay.toLocaleString() : "—"}
-            />
-          </div>
+          <StatRow
+            label="Days to Finish by Goal"
+            value={goalDate ? goalDaysRemaining.toLocaleString() : "—"}
+          />
+          <StatRow
+            label="Verses Required Each Day"
+            value={goalDate && goalDaysRemaining > 0 ? goalVersesPerDay.toLocaleString() : "—"}
+          />
         </CardContent>
       </Card>
     </div>
