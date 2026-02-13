@@ -35,6 +35,7 @@ type Props = {
     end_verse_id: number;
   };
   isLoading?: boolean;
+  hideDate?: boolean;
 };
 
 export function LogEntryForm({
@@ -43,6 +44,7 @@ export function LogEntryForm({
   onSubmit,
   initialValues,
   isLoading,
+  hideDate,
 }: Props) {
   const [date, setDate] = useState(todayString());
   const [bookIndex, setBookIndex] = useState(0);
@@ -147,15 +149,17 @@ export function LogEntryForm({
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="date">Date</Label>
-            <Input
-              id="date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </div>
+          {!hideDate && (
+            <div className="grid gap-2">
+              <Label htmlFor="date">Date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+          )}
 
           <div className="grid gap-2">
             <Label>Book</Label>

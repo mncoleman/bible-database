@@ -122,7 +122,7 @@ export default function TodayPage() {
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Daily Goal</span>
           <span>
-            {todayVerseCount} / {dailyGoal} verses
+            {todayVerseCount} / {dailyGoal} verses ({dailyProgress.toFixed(0)}%)
           </span>
         </div>
         <Progress value={dailyProgress} />
@@ -139,14 +139,6 @@ export default function TodayPage() {
         </div>
         <Progress value={overallProgress} />
       </div>
-
-      {/* Suggested Reading */}
-      <ReadingSuggestions
-        entries={allEntries}
-        bibleApp={(settings?.preferred_bible_app as BibleApp) || "BIBLEGATEWAY"}
-        bibleVersion={(settings?.preferred_bible_version as BibleVersion) || "NASB2020"}
-        onLog={handleLogSuggestion}
-      />
 
       {/* Today's entries */}
       <div className="space-y-3">
@@ -171,6 +163,14 @@ export default function TodayPage() {
         )}
       </div>
 
+      {/* Suggested Reading */}
+      <ReadingSuggestions
+        entries={allEntries}
+        bibleApp={(settings?.preferred_bible_app as BibleApp) || "BIBLEGATEWAY"}
+        bibleVersion={(settings?.preferred_bible_version as BibleVersion) || "NASB2020"}
+        onLog={handleLogSuggestion}
+      />
+
       <LogEntryForm
         open={formOpen}
         onOpenChange={(open) => {
@@ -179,6 +179,7 @@ export default function TodayPage() {
         }}
         onSubmit={handleCreate}
         initialValues={prefillValues}
+        hideDate={!!prefillValues}
         isLoading={createEntry.isPending}
       />
 
