@@ -37,8 +37,8 @@ Live at [bible.mncoleman.com](https://bible.mncoleman.com)
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/mncoleman/myPersonalBibleLog.git
-cd myPersonalBibleLog
+git clone https://github.com/mncoleman/bible-database.git
+cd bible-database
 npm install
 ```
 
