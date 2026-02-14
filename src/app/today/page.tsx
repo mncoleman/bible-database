@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -54,6 +54,17 @@ export default function TodayPage() {
   );
   const totalVerses = Bible.getTotalVerseCount();
   const overallProgress = (totalReadVerses / totalVerses) * 100;
+
+  const [animatedDaily, setAnimatedDaily] = useState(0);
+  const [animatedOverall, setAnimatedOverall] = useState(0);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      setAnimatedDaily(dailyProgress);
+      setAnimatedOverall(overallProgress);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [dailyProgress, overallProgress]);
 
   const handleCreate = (entry: {
     date: string;
@@ -125,7 +136,7 @@ export default function TodayPage() {
             {todayVerseCount} / {dailyGoal} verses ({dailyProgress.toFixed(0)}%)
           </span>
         </div>
-        <Progress value={dailyProgress} />
+        <Progress value={animatedDaily} />
       </div>
 
       {/* Overall Progress */}
@@ -137,7 +148,7 @@ export default function TodayPage() {
             verses ({overallProgress.toFixed(1)}%)
           </span>
         </div>
-        <Progress value={overallProgress} />
+        <Progress value={animatedOverall} />
       </div>
 
       {/* Today's entries */}
