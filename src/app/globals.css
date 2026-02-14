@@ -112,6 +112,11 @@
   --sidebar-ring: 217.2 91.2% 59.8%;
 }
 
+[data-slot="progress-indicator"] {
+  transition-duration: 700ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 @layer base {
   * {
     @apply border-border;
