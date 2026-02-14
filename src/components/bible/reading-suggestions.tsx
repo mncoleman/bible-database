@@ -1,15 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
-import { BookOpen, ArrowRight, Sparkles, Map } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Bible, { type VerseRange } from "@/lib/bible/bible";
 import type { LogEntry } from "@/lib/supabase/types";
 import {
   getPickUpWhereYouLeftOff,
-  getUnreadGaps,
-  getPopularStartingPoints,
   type Recommendation,
 } from "@/lib/bible/recommendations";
 import {
@@ -91,87 +89,28 @@ export function ReadingSuggestions({
     [entries, readRanges]
   );
 
-  const gaps = useMemo(
-    () => getUnreadGaps(readRanges, 3),
-    [readRanges]
-  );
-
-  const popularPoints = useMemo(
-    () => getPopularStartingPoints(readRanges),
-    [readRanges]
-  );
-
-  const hasAnySuggestions =
-    continueReading || gaps.length > 0 || popularPoints.length > 0;
-
-  if (!hasAnySuggestions) return null;
+  if (!continueReading) return null;
 
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">Suggested Reading</h2>
 
-      {continueReading && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <ArrowRight className="h-4 w-4" />
-              Continue Reading
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <SuggestionRow
-              rec={continueReading}
-              bibleApp={bibleApp}
-              bibleVersion={bibleVersion}
-              onLog={onLog}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {gaps.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Map className="h-4 w-4" />
-              Unread Sections
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 divide-y">
-            {gaps.map((gap, i) => (
-              <SuggestionRow
-                key={i}
-                rec={gap}
-                bibleApp={bibleApp}
-                bibleVersion={bibleVersion}
-                onLog={onLog}
-              />
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {popularPoints.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              Popular Starting Points
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 divide-y">
-            {popularPoints.map((point, i) => (
-              <SuggestionRow
-                key={i}
-                rec={point}
-                bibleApp={bibleApp}
-                bibleVersion={bibleVersion}
-                onLog={onLog}
-              />
-            ))}
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <ArrowRight className="h-4 w-4" />
+            Continue Reading
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <SuggestionRow
+            rec={continueReading}
+            bibleApp={bibleApp}
+            bibleVersion={bibleVersion}
+            onLog={onLog}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }
