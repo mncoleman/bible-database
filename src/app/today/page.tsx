@@ -196,6 +196,7 @@ export default function TodayPage() {
               }
             : undefined
         }
+        hideDate
         isLoading={updateEntry.isPending}
       />
     </div>
