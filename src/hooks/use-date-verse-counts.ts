@@ -18,3 +18,17 @@ export function useDateVerseCounts(entries: LogEntry[]) {
     return counts;
   }, [entries]);
 }
+
+export function useDateChapterCounts(entries: LogEntry[]) {
+  return useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const entry of entries) {
+      const { date } = entry;
+      const start = Bible.parseVerseId(entry.start_verse_id);
+      const end = Bible.parseVerseId(entry.end_verse_id);
+      const chapterCount = end.chapter - start.chapter + 1;
+      counts[date] = (counts[date] || 0) + chapterCount;
+    }
+    return counts;
+  }, [entries]);
+}
