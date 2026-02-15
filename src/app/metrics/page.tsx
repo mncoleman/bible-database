@@ -28,10 +28,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLogEntries, useFilteredLogEntries } from "@/hooks/use-log-entries";
-import { useDateVerseCounts } from "@/hooks/use-date-verse-counts";
+import { useDateVerseCounts, useDateChapterCounts } from "@/hooks/use-date-verse-counts";
 import { useUserSettings } from "@/hooks/use-user-settings";
 import Bible from "@/lib/bible/bible";
 import { todayString } from "@/lib/bible/date-helpers";
+
+type YAxisUnit = "verses" | "chapters";
 
 function StatRow({ label, value }: { label: string; value: string | number }) {
   return (
@@ -50,16 +52,20 @@ export default function MetricsPage() {
 
   const lookBackDate = settings?.look_back_date || null;
   const [viewMode, setViewMode] = useState<"lookback" | "all">("lookback");
+  const [yAxisUnit, setYAxisUnit] = useState<YAxisUnit>("verses");
 
   const entries = viewMode === "lookback" && lookBackDate ? filteredEntries : allEntries;
   const verseCounts = useDateVerseCounts(entries);
+  const chapterCounts = useDateChapterCounts(entries);
+  const activeCounts = yAxisUnit === "verses" ? verseCounts : chapterCounts;
+  const unitLabel = yAxisUnit === "verses" ? "verses" : "chapters";
 
   const dailyGoal = settings?.daily_verse_count_goal ?? 86;
 
   // Sorted dates with reading
   const sortedDates = useMemo(
-    () => Object.keys(verseCounts).sort(),
-    [verseCounts]
+    () => Object.keys(activeCounts).sort(),
+    [activeCounts]
   );
 
   const dateRange = useMemo(() => {
@@ -69,22 +75,22 @@ export default function MetricsPage() {
     return eachDayOfInterval({ start, end }).map((d) => format(d, "yyyy-MM-dd"));
   }, [sortedDates, today]);
 
-  // 1. Daily verses data
+  // 1. Daily data
   const dailyData = useMemo(
     () =>
       dateRange.map((date) => ({
         date,
         label: format(parseISO(date), "MMM d"),
-        verses: verseCounts[date] || 0,
+        count: activeCounts[date] || 0,
       })),
-    [dateRange, verseCounts]
+    [dateRange, activeCounts]
   );
 
   // 2. Cumulative data
   const cumulativeData = useMemo(() => {
     let running = 0;
     return dailyData.map((d) => {
-      running += d.verses;
+      running += d.count;
       return { ...d, cumulative: running };
     });
   }, [dailyData]);
@@ -97,14 +103,14 @@ export default function MetricsPage() {
       const d = parseISO(date);
       const weekStart = format(startOfWeek(d, { weekStartsOn: 0 }), "MMM d");
       if (!weeks[weekStart]) weeks[weekStart] = { total: 0, days: 0 };
-      weeks[weekStart].total += verseCounts[date] || 0;
+      weeks[weekStart].total += activeCounts[date] || 0;
       weeks[weekStart].days += 1;
     }
     return Object.entries(weeks).map(([week, { total, days }]) => ({
       week,
       average: Math.round(total / days),
     }));
-  }, [dateRange, verseCounts]);
+  }, [dateRange, activeCounts]);
 
   // 4. Monthly summaries
   const monthlyData = useMemo(() => {
@@ -112,10 +118,10 @@ export default function MetricsPage() {
     const months: Record<string, number> = {};
     for (const date of dateRange) {
       const monthKey = format(parseISO(date), "MMM yyyy");
-      months[monthKey] = (months[monthKey] || 0) + (verseCounts[date] || 0);
+      months[monthKey] = (months[monthKey] || 0) + (activeCounts[date] || 0);
     }
     return Object.entries(months).map(([month, total]) => ({ month, total }));
-  }, [dateRange, verseCounts]);
+  }, [dateRange, activeCounts]);
 
   // 5. Reading stats
   const readingStats = useMemo(() => {
@@ -128,13 +134,13 @@ export default function MetricsPage() {
     let daysWithReading = 0;
 
     for (let i = dateRange.length - 1; i >= 0; i--) {
-      const hasReading = (verseCounts[dateRange[i]] || 0) > 0;
+      const hasReading = (activeCounts[dateRange[i]] || 0) > 0;
       if (hasReading) daysWithReading++;
     }
 
     // Calculate streaks going forward
     for (const date of dateRange) {
-      if ((verseCounts[date] || 0) > 0) {
+      if ((activeCounts[date] || 0) > 0) {
         streak++;
         longestStreak = Math.max(longestStreak, streak);
       } else {
@@ -145,7 +151,7 @@ export default function MetricsPage() {
     // Current streak: count backwards from today
     currentStreak = 0;
     for (let i = dateRange.length - 1; i >= 0; i--) {
-      if ((verseCounts[dateRange[i]] || 0) > 0) {
+      if ((activeCounts[dateRange[i]] || 0) > 0) {
         currentStreak++;
       } else {
         break;
@@ -156,7 +162,7 @@ export default function MetricsPage() {
     const consistency = totalDays > 0 ? Math.round((daysWithReading / totalDays) * 100) : 0;
 
     return { currentStreak, longestStreak, daysWithReading, totalDays, consistency };
-  }, [dateRange, verseCounts]);
+  }, [dateRange, activeCounts]);
 
   const chartColor = "hsl(var(--primary))";
   const mutedColor = "hsl(var(--muted-foreground))";
@@ -175,19 +181,32 @@ export default function MetricsPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Metrics</h1>
 
-      {/* View mode toggle */}
-      {lookBackDate && (
-        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "lookback" | "all")}>
+      {/* Toggles */}
+      <div className="flex flex-col gap-3">
+        {lookBackDate && (
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "lookback" | "all")}>
+            <TabsList className="w-full">
+              <TabsTrigger value="lookback" className="flex-1">
+                Since {format(parseISO(lookBackDate), "MMM d, yyyy")}
+              </TabsTrigger>
+              <TabsTrigger value="all" className="flex-1">
+                All Time
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
+
+        <Tabs value={yAxisUnit} onValueChange={(v) => setYAxisUnit(v as YAxisUnit)}>
           <TabsList className="w-full">
-            <TabsTrigger value="lookback" className="flex-1">
-              Since {format(parseISO(lookBackDate), "MMM d, yyyy")}
+            <TabsTrigger value="verses" className="flex-1">
+              Verses
             </TabsTrigger>
-            <TabsTrigger value="all" className="flex-1">
-              All Time
+            <TabsTrigger value="chapters" className="flex-1">
+              Chapters
             </TabsTrigger>
           </TabsList>
         </Tabs>
-      )}
+      </div>
 
       {/* Reading Stats */}
       <Card>
@@ -205,14 +224,14 @@ export default function MetricsPage() {
         </CardContent>
       </Card>
 
-      {/* Daily Verses Read */}
+      {/* Daily Reading */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Daily Verses Read</CardTitle>
+          <CardTitle className="text-base">Daily {yAxisUnit === "verses" ? "Verses" : "Chapters"} Read</CardTitle>
         </CardHeader>
         <CardContent>
           {dailyData.length > 0 ? (
-            <ResponsiveContainer key={viewMode} width="100%" height={250}>
+            <ResponsiveContainer key={`${viewMode}-${yAxisUnit}`} width="100%" height={250}>
               <AreaChart data={dailyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={mutedColor} opacity={0.2} />
                 <XAxis
@@ -230,10 +249,12 @@ export default function MetricsPage() {
                     fontSize: 12,
                   }}
                 />
-                <ReferenceLine y={dailyGoal} stroke={goalColor} strokeDasharray="4 4" label="" />
+                {yAxisUnit === "verses" && (
+                  <ReferenceLine y={dailyGoal} stroke={goalColor} strokeDasharray="4 4" label="" />
+                )}
                 <Area
                   type="monotone"
-                  dataKey="verses"
+                  dataKey="count"
                   stroke={chartColor}
                   fill={chartColor}
                   fillOpacity={0.1}
@@ -247,14 +268,14 @@ export default function MetricsPage() {
         </CardContent>
       </Card>
 
-      {/* Cumulative Verses Read */}
+      {/* Cumulative Reading */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Cumulative Verses Read</CardTitle>
+          <CardTitle className="text-base">Cumulative {yAxisUnit === "verses" ? "Verses" : "Chapters"} Read</CardTitle>
         </CardHeader>
         <CardContent>
           {cumulativeData.length > 0 ? (
-            <ResponsiveContainer key={viewMode} width="100%" height={250}>
+            <ResponsiveContainer key={`${viewMode}-${yAxisUnit}`} width="100%" height={250}>
               <LineChart data={cumulativeData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={mutedColor} opacity={0.2} />
                 <XAxis
@@ -291,11 +312,11 @@ export default function MetricsPage() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Weekly Average</CardTitle>
-          <p className="text-xs text-muted-foreground">Average verses per day, by week</p>
+          <p className="text-xs text-muted-foreground">Average {unitLabel} per day, by week</p>
         </CardHeader>
         <CardContent>
           {weeklyData.length > 0 ? (
-            <ResponsiveContainer key={viewMode} width="100%" height={250}>
+            <ResponsiveContainer key={`${viewMode}-${yAxisUnit}`} width="100%" height={250}>
               <BarChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={mutedColor} opacity={0.2} />
                 <XAxis
@@ -313,7 +334,9 @@ export default function MetricsPage() {
                     fontSize: 12,
                   }}
                 />
-                <ReferenceLine y={dailyGoal} stroke={goalColor} strokeDasharray="4 4" />
+                {yAxisUnit === "verses" && (
+                  <ReferenceLine y={dailyGoal} stroke={goalColor} strokeDasharray="4 4" />
+                )}
                 <Bar dataKey="average" fill={chartColor} radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -327,11 +350,11 @@ export default function MetricsPage() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Monthly Summary</CardTitle>
-          <p className="text-xs text-muted-foreground">Total verses per month</p>
+          <p className="text-xs text-muted-foreground">Total {unitLabel} per month</p>
         </CardHeader>
         <CardContent>
           {monthlyData.length > 0 ? (
-            <ResponsiveContainer key={viewMode} width="100%" height={250}>
+            <ResponsiveContainer key={`${viewMode}-${yAxisUnit}`} width="100%" height={250}>
               <BarChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={mutedColor} opacity={0.2} />
                 <XAxis
