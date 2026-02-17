@@ -98,7 +98,7 @@ export default function ProgressPage() {
   const ntTotalVerses = ntBooks.reduce((s, b) => s + Bible.getBookVerseCount(b.bibleOrder), 0);
   const ntReadVerses = ntBooks.reduce((s, b) => s + Bible.countUniqueBookRangeVerses(b.bibleOrder, ranges), 0);
 
-  const bibleSegments = useMemo(() => Bible.generateBibleSegments(ranges), [ranges]);
+  const bibleSegments = Bible.generateBibleSegments(ranges);
 
   // Books completed
   const booksCompleted = books.filter((b) => {

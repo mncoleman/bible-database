@@ -48,14 +48,13 @@ function ThemeToggle() {
 export function Nav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const { theme } = useTheme();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container max-w-screen-xl px-4">
         <div className="grid grid-cols-[1fr_auto_1fr] h-14 items-center gap-4">
           {/* Left: Brand */}
-          <Link href="/today" className="flex items-center gap-2 font-semibold text-lg">
+          <Link href="/today" className="col-start-1 flex items-center gap-2 font-semibold text-lg">
             <Image
               src="/logo-light.svg"
               alt="Bible Logo"
@@ -74,7 +73,7 @@ export function Nav() {
           </Link>
 
           {/* Center: Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="col-start-2 hidden md:flex items-center gap-1">
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -93,7 +92,7 @@ export function Nav() {
           </nav>
 
           {/* Right: Theme toggle & mobile menu */}
-          <div className="flex items-center gap-2 justify-end">
+          <div className="col-start-3 flex items-center gap-2 justify-end">
             <ThemeToggle />
 
             {/* Mobile nav */}

@@ -6,10 +6,6 @@ import {
   parseISO,
   eachDayOfInterval,
   startOfWeek,
-  endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  differenceInDays,
 } from "date-fns";
 import {
   AreaChart,
@@ -30,7 +26,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLogEntries, useFilteredLogEntries } from "@/hooks/use-log-entries";
 import { useDateVerseCounts, useDateChapterCounts } from "@/hooks/use-date-verse-counts";
 import { useUserSettings } from "@/hooks/use-user-settings";
-import Bible from "@/lib/bible/bible";
 import { todayString } from "@/lib/bible/date-helpers";
 
 type YAxisUnit = "verses" | "chapters";
@@ -88,11 +83,14 @@ export default function MetricsPage() {
 
   // 2. Cumulative data
   const cumulativeData = useMemo(() => {
-    let running = 0;
-    return dailyData.map((d) => {
-      running += d.count;
-      return { ...d, cumulative: running };
-    });
+    return dailyData.reduce<Array<{ date: string; label: string; count: number; cumulative: number }>>(
+      (acc, d) => {
+        const prev = acc.length > 0 ? acc[acc.length - 1].cumulative : 0;
+        acc.push({ ...d, cumulative: prev + d.count });
+        return acc;
+      },
+      []
+    );
   }, [dailyData]);
 
   // 3. Weekly averages
