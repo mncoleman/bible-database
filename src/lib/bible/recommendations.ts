@@ -1,4 +1,4 @@
-import Bible, { type VerseRange, type Segment } from "./bible";
+import Bible, { type VerseRange } from "./bible";
 import type { LogEntry } from "@/lib/supabase/types";
 
 export type Recommendation = {
@@ -21,8 +21,6 @@ export function getPickUpWhereYouLeftOff(
 
   // Most recent entry (entries are sorted by date desc from the hook)
   const mostRecent = entries[0];
-  const endParsed = Bible.parseVerseId(mostRecent.end_verse_id);
-
   // Find the next verse after the most recent entry
   let nextVerseId = Bible.getNextVerseId(mostRecent.end_verse_id, true);
   if (!nextVerseId) return null;
@@ -43,7 +41,6 @@ export function getPickUpWhereYouLeftOff(
     nextParsed.chapter
   );
 
-  const bookName = Bible.getBookName(nextParsed.book);
   const rangeDisplay = Bible.displayVerseRange(nextVerseId, chapterEnd);
 
   return {

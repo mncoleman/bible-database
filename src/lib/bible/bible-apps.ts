@@ -116,6 +116,12 @@ const BlueLetterBibleBookCodes = [
   "3Jo", "Jde", "Rev",
 ];
 
+const isMobileDevice = (): boolean => {
+  if (typeof window === "undefined") return false;
+  const ua = navigator.userAgent;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+};
+
 export const getAppReadingUrl = (
   app: BibleApp,
   version: BibleVersion,
@@ -127,7 +133,13 @@ export const getAppReadingUrl = (
 
   switch (app) {
     case BibleApps.YOUVERSIONAPP: {
-      return `youversion://bible?reference=${bookOsisCode}.${chapterIndex}.${version}`;
+      // On mobile, use app URL scheme; on desktop, use Bible.com website
+      if (isMobileDevice()) {
+        return `youversion://bible?reference=${bookOsisCode}.${chapterIndex}.${version}`;
+      } else {
+        const langCode = BibleComTranslationIds[version] || 1;
+        return `https://www.bible.com/bible/${langCode}/${bookOsisCode}.${chapterIndex}.${version}`;
+      }
     }
     case BibleApps.BIBLECOM: {
       const langCode = BibleComTranslationIds[version] || 1;

@@ -15,7 +15,6 @@ import {
 } from "@/hooks/use-log-entries";
 import { useDateVerseCounts } from "@/hooks/use-date-verse-counts";
 import { useUserSettings } from "@/hooks/use-user-settings";
-import Bible from "@/lib/bible/bible";
 import { LogEntryCard } from "@/components/bible/log-entry-card";
 import { LogEntryForm } from "@/components/forms/log-entry-form";
 import type { LogEntry } from "@/lib/supabase/types";

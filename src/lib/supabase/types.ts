@@ -17,6 +17,13 @@ export type UserSettings = {
   preferred_bible_app: string;
   start_page: string;
   theme: string;
+  // Color customization (HSL format: "220 70% 50%")
+  primary_light: string | null;
+  accent_light: string | null;
+  chart_light: string | null;
+  primary_dark: string | null;
+  accent_dark: string | null;
+  chart_dark: string | null;
   created_at: string;
   updated_at: string;
 };
