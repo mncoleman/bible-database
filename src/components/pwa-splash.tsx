@@ -21,25 +21,36 @@ function getIsPWAServer() {
   return false;
 }
 
+// Only show splash during a cold start — if the page is already loaded, skip it
+function getIsLoading() {
+  if (typeof document === "undefined") return true;
+  return document.readyState !== "complete";
+}
+
 export function PwaSplash() {
   const isPWA = useSyncExternalStore(subscribePWA, getIsPWA, getIsPWAServer);
+  const [showSplash] = useState(() => isPWA && getIsLoading());
   const [phase, setPhase] = useState<"visible" | "fading" | "hidden">("visible");
 
   useEffect(() => {
-    if (!isPWA) return;
+    if (!showSplash) return;
 
-    // Begin fade-out after 1.5s
-    const fadeTimer = setTimeout(() => setPhase("fading"), 1500);
-    // Remove from DOM after fade completes
-    const hideTimer = setTimeout(() => setPhase("hidden"), 1800);
+    // Wait for the page to finish loading, then fade out
+    function dismiss() {
+      setPhase("fading");
+      setTimeout(() => setPhase("hidden"), 300);
+    }
 
-    return () => {
-      clearTimeout(fadeTimer);
-      clearTimeout(hideTimer);
-    };
-  }, [isPWA]);
+    if (document.readyState === "complete") {
+      dismiss();
+      return;
+    }
 
-  if (!isPWA || phase === "hidden") return null;
+    window.addEventListener("load", dismiss, { once: true });
+    return () => window.removeEventListener("load", dismiss);
+  }, [showSplash]);
+
+  if (!showSplash || phase === "hidden") return null;
 
   return (
     <div
