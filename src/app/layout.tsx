@@ -4,7 +4,6 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/components/query-provider";
 import { Nav } from "@/components/nav";
 import { Toaster } from "@/components/ui/sonner";
-import { PwaSplash } from "@/components/pwa-splash";
 import { CustomColorProvider } from "@/components/custom-color-provider";
 
 export const metadata: Metadata = {
@@ -48,7 +47,6 @@ export default function RootLayout({
         >
           <QueryProvider>
             <CustomColorProvider />
-            <PwaSplash />
             <Nav />
             <main className="container max-w-screen-xl mx-auto px-4 py-6">
               {children}
