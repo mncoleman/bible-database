@@ -59,7 +59,7 @@ export default function RootLayout({
             <main className="container max-w-screen-xl mx-auto px-4 py-6 pb-20 md:pb-6">
               {children}
             </main>
-            <Toaster />
+            <Toaster duration={2000} />
           </QueryProvider>
         </ThemeProvider>
       </body>
