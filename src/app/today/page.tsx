@@ -68,13 +68,8 @@ export default function TodayPage() {
     const daysRemaining = Math.max(0, differenceInDays(parseISO(goalEndDate), new Date()));
     if (daysRemaining === 0) return null;
 
-    // Original planned pace (start date → end date)
-    const totalDaysInPlan = startDate
-      ? differenceInDays(parseISO(goalEndDate), parseISO(startDate))
-      : null;
-    const plannedDailyGoal = totalDaysInPlan && totalDaysInPlan > 0
-      ? Math.ceil(totalVerses / totalDaysInPlan)
-      : null;
+    // Use the user's configured daily verse goal from settings
+    const plannedDailyGoal = dailyGoal;
 
     // Current pace needed (today → end date)
     const currentDailyNeeded = Math.ceil(remainingVerses / daysRemaining);
@@ -83,14 +78,14 @@ export default function TodayPage() {
     const daysElapsed = startDate
       ? differenceInDays(new Date(), parseISO(startDate))
       : null;
-    const expectedVerses = plannedDailyGoal && daysElapsed !== null
+    const expectedVerses = daysElapsed !== null
       ? plannedDailyGoal * daysElapsed
       : null;
     const overallDiff = expectedVerses !== null ? totalReadVerses - expectedVerses : null;
 
     // Verses to read today to be on track by end of day
     // = plannedDailyGoal - overallDiff (accounts for already-read-today via totalReadVerses)
-    const versesToGetOnTrack = plannedDailyGoal !== null && overallDiff !== null
+    const versesToGetOnTrack = overallDiff !== null
       ? Math.max(0, plannedDailyGoal - overallDiff)
       : Math.max(0, currentDailyNeeded - todayVerseCount);
 
@@ -103,7 +98,7 @@ export default function TodayPage() {
       overallDiff,
       versesToGetOnTrack,
     };
-  }, [goalEndDate, startDate, remainingVerses, todayVerseCount, totalVerses, totalReadVerses]);
+  }, [goalEndDate, startDate, remainingVerses, todayVerseCount, dailyGoal, totalReadVerses]);
 
   const [animatedDaily, setAnimatedDaily] = useState(0);
   const [animatedOverall, setAnimatedOverall] = useState(0);
@@ -244,11 +239,9 @@ export default function TodayPage() {
               {planStatus.startDate && <>{planStatus.startDate} &rarr; </>}
               {planStatus.goalDate} ({planStatus.daysRemaining} days left)
             </p>
-            {planStatus.plannedDailyGoal !== null && (
-              <p className="text-xs text-muted-foreground">
-                {planStatus.plannedDailyGoal.toLocaleString()} verses/day
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground">
+              {planStatus.plannedDailyGoal.toLocaleString()} verses/day
+            </p>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex justify-between text-sm">
