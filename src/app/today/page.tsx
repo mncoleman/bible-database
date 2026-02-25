@@ -60,24 +60,50 @@ export default function TodayPage() {
   const remainingVerses = totalVerses - totalReadVerses;
   const overallProgress = (totalReadVerses / totalVerses) * 100;
 
-  // Plan status based on goal_end_date
+  // Plan status based on start date + goal end date
+  const startDate = settings?.look_back_date ?? null;
   const goalEndDate = settings?.goal_end_date ?? null;
   const planStatus = useMemo(() => {
     if (!goalEndDate) return null;
     const daysRemaining = Math.max(0, differenceInDays(parseISO(goalEndDate), new Date()));
     if (daysRemaining === 0) return null;
-    const versesPerDay = Math.ceil(remainingVerses / daysRemaining);
-    const versesLeftToday = Math.max(0, versesPerDay - todayVerseCount);
-    const diff = todayVerseCount - versesPerDay;
+
+    // Original planned pace (start date → end date)
+    const totalDaysInPlan = startDate
+      ? differenceInDays(parseISO(goalEndDate), parseISO(startDate))
+      : null;
+    const plannedDailyGoal = totalDaysInPlan && totalDaysInPlan > 0
+      ? Math.ceil(totalVerses / totalDaysInPlan)
+      : null;
+
+    // Current pace needed (today → end date)
+    const currentDailyNeeded = Math.ceil(remainingVerses / daysRemaining);
+
+    // How far ahead/behind overall plan
+    const daysElapsed = startDate
+      ? differenceInDays(new Date(), parseISO(startDate))
+      : null;
+    const expectedVerses = plannedDailyGoal && daysElapsed !== null
+      ? plannedDailyGoal * daysElapsed
+      : null;
+    const overallDiff = expectedVerses !== null ? totalReadVerses - expectedVerses : null;
+
+    // Verses to read today to be on track by end of day
+    // = plannedDailyGoal - overallDiff (accounts for already-read-today via totalReadVerses)
+    const versesToGetOnTrack = plannedDailyGoal !== null && overallDiff !== null
+      ? Math.max(0, plannedDailyGoal - overallDiff)
+      : Math.max(0, currentDailyNeeded - todayVerseCount);
+
     return {
       goalDate: format(parseISO(goalEndDate), "MMM d, yyyy"),
+      startDate: startDate ? format(parseISO(startDate), "MMM d, yyyy") : null,
       daysRemaining,
-      versesPerDay,
-      versesLeftToday,
-      diff,
-      isAhead: diff >= 0,
+      plannedDailyGoal,
+      currentDailyNeeded,
+      overallDiff,
+      versesToGetOnTrack,
     };
-  }, [goalEndDate, remainingVerses, todayVerseCount]);
+  }, [goalEndDate, startDate, remainingVerses, todayVerseCount, totalVerses, totalReadVerses]);
 
   const [animatedDaily, setAnimatedDaily] = useState(0);
   const [animatedOverall, setAnimatedOverall] = useState(0);
@@ -185,16 +211,17 @@ export default function TodayPage() {
             No readings logged today. Tap &quot;Log Reading&quot; to get started.
           </p>
         ) : (
-          <div className="max-h-64 overflow-y-auto scrollbar-hide space-y-3">
+          <div className="max-h-[10rem] overflow-y-auto scrollbar-hide snap-y snap-mandatory overscroll-contain space-y-2">
             {todayEntries.map((entry) => (
-              <LogEntryCard
-                key={entry.id}
-                entry={entry}
-                onEdit={(e) => setEditingEntry(e)}
-                onDelete={handleDelete}
-                bibleApp={(settings?.preferred_bible_app as BibleApp) || "BIBLEGATEWAY"}
-                bibleVersion={(settings?.preferred_bible_version as BibleVersion) || "NASB2020"}
-              />
+              <div key={entry.id} className="snap-start">
+                <LogEntryCard
+                  entry={entry}
+                  onEdit={(e) => setEditingEntry(e)}
+                  onDelete={handleDelete}
+                  bibleApp={(settings?.preferred_bible_app as BibleApp) || "BIBLEGATEWAY"}
+                  bibleVersion={(settings?.preferred_bible_version as BibleVersion) || "NASB2020"}
+                />
+              </div>
             ))}
           </div>
         )}
@@ -214,29 +241,42 @@ export default function TodayPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Plan Status</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Goal: finish by {planStatus.goalDate} ({planStatus.daysRemaining} days left)
+              {planStatus.startDate && <>{planStatus.startDate} &rarr; </>}
+              {planStatus.goalDate} ({planStatus.daysRemaining} days left)
             </p>
           </CardHeader>
           <CardContent className="space-y-2">
+            {planStatus.plannedDailyGoal !== null && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Planned daily goal</span>
+                <span className="font-medium">{planStatus.plannedDailyGoal.toLocaleString()} verses</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Verses needed today</span>
-              <span className="font-medium">{planStatus.versesPerDay.toLocaleString()}</span>
+              <span className="text-muted-foreground">Current daily needed</span>
+              <span className="font-medium">{planStatus.currentDailyNeeded.toLocaleString()} verses</span>
+            </div>
+            {planStatus.overallDiff !== null && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Overall</span>
+                <span className="font-medium">
+                  {planStatus.overallDiff >= 0
+                    ? `${planStatus.overallDiff.toLocaleString()} verses ahead`
+                    : `${Math.abs(planStatus.overallDiff).toLocaleString()} verses behind`}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Read today to be on track</span>
+              <span className="font-medium">
+                {planStatus.versesToGetOnTrack === 0
+                  ? "Done for today!"
+                  : `${planStatus.versesToGetOnTrack.toLocaleString()} verses`}
+              </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Read today</span>
-              <span className="font-medium">{todayVerseCount.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Status</span>
-              {planStatus.isAhead ? (
-                <span className="font-medium">
-                  {planStatus.diff} verse{planStatus.diff !== 1 ? "s" : ""} ahead
-                </span>
-              ) : (
-                <span className="font-medium">
-                  {planStatus.versesLeftToday} verse{planStatus.versesLeftToday !== 1 ? "s" : ""} left to stay on track
-                </span>
-              )}
+              <span className="font-medium">{todayVerseCount.toLocaleString()} verses</span>
             </div>
           </CardContent>
         </Card>
