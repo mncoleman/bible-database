@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { format, addDays } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ function SettingsForm({ settings }: { settings: NonNullable<ReturnType<typeof us
   const [bibleVersion, setBibleVersion] = useState(settings.preferred_bible_version);
   const [bibleApp, setBibleApp] = useState(settings.preferred_bible_app);
   const [lookBackDate, setLookBackDate] = useState(settings.look_back_date || "");
+  const [goalEndDate, setGoalEndDate] = useState(settings.goal_end_date || "");
 
   const [primaryLight, setPrimaryLight] = useState(settings.primary_light || "0 0% 9%");
   const [accentLight, setAccentLight] = useState(settings.accent_light || "0 0% 96.1%");
@@ -56,6 +58,7 @@ function SettingsForm({ settings }: { settings: NonNullable<ReturnType<typeof us
         preferred_bible_version: bibleVersion,
         preferred_bible_app: bibleApp,
         look_back_date: lookBackDate || null,
+        goal_end_date: goalEndDate || null,
       },
       {
         onSuccess: () => toast.success("Settings saved"),
@@ -222,6 +225,38 @@ function SettingsForm({ settings }: { settings: NonNullable<ReturnType<typeof us
                     onClick={() => setLookBackDate("")}
                   >
                     Clear date
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Reading Goal</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-2">
+                <Label htmlFor="goalEndDate">Finish the Bible by</Label>
+                <Input
+                  id="goalEndDate"
+                  type="date"
+                  value={goalEndDate}
+                  min={format(addDays(new Date(), 1), "yyyy-MM-dd")}
+                  onChange={(e) => setGoalEndDate(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Set a target date and your daily verse requirement will be
+                  calculated automatically. View your plan status on the Today page.
+                </p>
+                {goalEndDate && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-fit"
+                    onClick={() => setGoalEndDate("")}
+                  >
+                    Clear goal
                   </Button>
                 )}
               </div>

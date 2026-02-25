@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import { addDays, differenceInDays, format, parseISO, subDays } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProgressBar } from "@/components/bible/progress-bar";
 import { SegmentBar } from "@/components/bible/segment-bar";
@@ -69,8 +68,6 @@ export default function ProgressPage() {
 
   const entries = viewMode === "lookback" && lookBackDate ? filteredEntries : allEntries;
   const verseCounts = useDateVerseCounts(entries);
-
-  const [goalDate, setGoalDate] = useState("");
 
   const ranges: VerseRange[] = useMemo(
     () => entries.map((e) => ({ startVerseId: e.start_verse_id, endVerseId: e.end_verse_id })),
@@ -156,14 +153,6 @@ export default function ProgressPage() {
   const todayFinishDate = todayVersesRead > 0
     ? format(addDays(new Date(), todayDaysToFinish), "MMM d, yyyy")
     : "";
-
-  // Set a Goal
-  const goalDaysRemaining = goalDate
-    ? Math.max(0, differenceInDays(parseISO(goalDate), new Date()))
-    : 0;
-  const goalVersesPerDay = goalDaysRemaining > 0
-    ? Math.ceil(remainingVerses / goalDaysRemaining)
-    : 0;
 
   if (isLoading) {
     return (
@@ -291,37 +280,6 @@ export default function ProgressPage() {
         </CardContent>
       </Card>
 
-      {/* Set a Goal */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Set a Goal</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Choose a target date to finish reading the Bible and see how many
-            verses you need to read each day.
-          </p>
-        </CardHeader>
-        <CardContent className="divide-y">
-          <div className="flex flex-col items-center py-4">
-            <span className="text-muted-foreground text-sm mb-2">Goal Finish Date</span>
-            <Input
-              id="goalDate"
-              type="date"
-              className="h-10 w-44 text-sm font-medium text-center"
-              value={goalDate}
-              min={format(addDays(new Date(), 1), "yyyy-MM-dd")}
-              onChange={(e) => setGoalDate(e.target.value)}
-            />
-          </div>
-          <StatRow
-            label="Days to Finish by Goal"
-            value={goalDate ? goalDaysRemaining.toLocaleString() : "—"}
-          />
-          <StatRow
-            label="Verses Required Each Day"
-            value={goalDate && goalDaysRemaining > 0 ? goalVersesPerDay.toLocaleString() : "—"}
-          />
-        </CardContent>
-      </Card>
     </div>
   );
 }

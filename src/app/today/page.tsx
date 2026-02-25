@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { differenceInDays, parseISO, format } from "date-fns";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { LogEntryForm } from "@/components/forms/log-entry-form";
 import { LogEntryCard } from "@/components/bible/log-entry-card";
@@ -46,14 +48,36 @@ export default function TodayPage() {
   );
   const dailyProgress = Math.min((todayVerseCount / dailyGoal) * 100, 100);
 
-  const totalReadVerses = Bible.countUniqueRangeVerses(
-    allEntries.map((e) => ({
+  const ranges = useMemo(
+    () => allEntries.map((e) => ({
       startVerseId: e.start_verse_id,
       endVerseId: e.end_verse_id,
-    }))
+    })),
+    [allEntries]
   );
+  const totalReadVerses = Bible.countUniqueRangeVerses(ranges);
   const totalVerses = Bible.getTotalVerseCount();
+  const remainingVerses = totalVerses - totalReadVerses;
   const overallProgress = (totalReadVerses / totalVerses) * 100;
+
+  // Plan status based on goal_end_date
+  const goalEndDate = settings?.goal_end_date ?? null;
+  const planStatus = useMemo(() => {
+    if (!goalEndDate) return null;
+    const daysRemaining = Math.max(0, differenceInDays(parseISO(goalEndDate), new Date()));
+    if (daysRemaining === 0) return null;
+    const versesPerDay = Math.ceil(remainingVerses / daysRemaining);
+    const versesLeftToday = Math.max(0, versesPerDay - todayVerseCount);
+    const diff = todayVerseCount - versesPerDay;
+    return {
+      goalDate: format(parseISO(goalEndDate), "MMM d, yyyy"),
+      daysRemaining,
+      versesPerDay,
+      versesLeftToday,
+      diff,
+      isAhead: diff >= 0,
+    };
+  }, [goalEndDate, remainingVerses, todayVerseCount]);
 
   const [animatedDaily, setAnimatedDaily] = useState(0);
   const [animatedOverall, setAnimatedOverall] = useState(0);
@@ -151,7 +175,7 @@ export default function TodayPage() {
         <Progress value={animatedOverall} />
       </div>
 
-      {/* Today's entries */}
+      {/* Today's entries — scrollable, no scrollbar */}
       <div className="space-y-3">
         <h2 className="text-lg font-semibold">Today&apos;s Readings</h2>
         {isLoading ? (
@@ -161,16 +185,18 @@ export default function TodayPage() {
             No readings logged today. Tap &quot;Log Reading&quot; to get started.
           </p>
         ) : (
-          todayEntries.map((entry) => (
-            <LogEntryCard
-              key={entry.id}
-              entry={entry}
-              onEdit={(e) => setEditingEntry(e)}
-              onDelete={handleDelete}
-              bibleApp={(settings?.preferred_bible_app as BibleApp) || "BIBLEGATEWAY"}
-              bibleVersion={(settings?.preferred_bible_version as BibleVersion) || "NASB2020"}
-            />
-          ))
+          <div className="max-h-64 overflow-y-auto scrollbar-hide space-y-3">
+            {todayEntries.map((entry) => (
+              <LogEntryCard
+                key={entry.id}
+                entry={entry}
+                onEdit={(e) => setEditingEntry(e)}
+                onDelete={handleDelete}
+                bibleApp={(settings?.preferred_bible_app as BibleApp) || "BIBLEGATEWAY"}
+                bibleVersion={(settings?.preferred_bible_version as BibleVersion) || "NASB2020"}
+              />
+            ))}
+          </div>
         )}
       </div>
 
@@ -181,6 +207,40 @@ export default function TodayPage() {
         bibleVersion={(settings?.preferred_bible_version as BibleVersion) || "NASB2020"}
         onLog={handleLogSuggestion}
       />
+
+      {/* Plan Status */}
+      {planStatus && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Plan Status</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Goal: finish by {planStatus.goalDate} ({planStatus.daysRemaining} days left)
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Verses needed today</span>
+              <span className="font-medium">{planStatus.versesPerDay.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Read today</span>
+              <span className="font-medium">{todayVerseCount.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Status</span>
+              {planStatus.isAhead ? (
+                <span className="font-medium">
+                  {planStatus.diff} verse{planStatus.diff !== 1 ? "s" : ""} ahead
+                </span>
+              ) : (
+                <span className="font-medium">
+                  {planStatus.versesLeftToday} verse{planStatus.versesLeftToday !== 1 ? "s" : ""} left to stay on track
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <LogEntryForm
         open={formOpen}
