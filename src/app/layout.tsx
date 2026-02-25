@@ -7,12 +7,20 @@ import { Toaster } from "@/components/ui/sonner";
 import { CustomColorProvider } from "@/components/custom-color-provider";
 
 export const metadata: Metadata = {
-  title: "Bible",
+  title: {
+    default: "Bible",
+    template: "%s | Bible",
+  },
   description: "Personal Bible reading tracker",
   manifest: "/manifest.json",
   icons: {
     icon: "/icon.svg",
     apple: "/apple-icon.png",
+  },
+  openGraph: {
+    title: "Bible",
+    description: "Personal Bible reading tracker",
+    type: "website",
   },
   appleWebApp: {
     capable: true,

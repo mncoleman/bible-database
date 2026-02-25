@@ -58,6 +58,12 @@ export default function ImportPage() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File too large (max 5MB)");
+      return;
+    }
+
     setFileName(file.name);
     setImportResult(null);
 
@@ -65,6 +71,11 @@ export default function ImportPage() {
     reader.onload = (event) => {
       const text = event.target?.result as string;
       const csvRows = parseCSV(text);
+
+      if (csvRows.length > 50_000) {
+        toast.error("Too many rows (max 50,000)");
+        return;
+      }
 
       // Build a set of existing entries for duplicate detection
       const existingSet = new Set(

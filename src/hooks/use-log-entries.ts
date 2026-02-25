@@ -92,10 +92,16 @@ export function useUpdateLogEntry() {
       start_verse_id?: number;
       end_verse_id?: number;
     }) => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
       const { data, error } = await supabase
         .from("log_entries")
         .update(updates)
         .eq("id", id)
+        .eq("user_id", user.id)
         .select()
         .single();
       if (error) throw error;
@@ -144,10 +150,16 @@ export function useDeleteLogEntry() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
       const { error } = await supabase
         .from("log_entries")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", user.id);
       if (error) throw error;
     },
     onSuccess: () => {

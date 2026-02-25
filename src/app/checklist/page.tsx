@@ -142,6 +142,7 @@ export default function ChecklistPage() {
                         <button
                           key={ch}
                           type="button"
+                          aria-label={`${book.name} chapter ${ch}${chapterComplete ? ", complete" : chapterPartial ? ", partial" : ""}`}
                           onClick={() => handleChapterToggle(book.bibleOrder, ch, chapterComplete)}
                           className={cn(
                             "relative flex items-center justify-center w-full aspect-square rounded-md text-sm font-medium border cursor-pointer transition-colors",

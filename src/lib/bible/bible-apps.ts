@@ -164,18 +164,6 @@ export const getAppReadingUrl = (
   }
 };
 
-export const getDefaultBibleApp = (): BibleApp => {
-  if (typeof window !== "undefined") {
-    const ua = navigator.userAgent;
-    if (/Android/i.test(ua)) return BibleApps.YOUVERSIONAPP;
-  }
-  return BibleApps.BIBLEGATEWAY;
-};
-
-export const getDefaultBibleVersion = (): BibleVersion => {
-  return "NASB2020";
-};
-
 export const bibleVersionLabels: Record<BibleVersion, string> = {
   AMP: "Amplified Bible",
   KJV: "King James Version",

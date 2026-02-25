@@ -182,8 +182,9 @@ function LogEntryFormInner({
           <>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>Start Chapter</Label>
+                <Label htmlFor="startChapter">Start Chapter</Label>
                 <select
+                  id="startChapter"
                   value={startChapter || ""}
                   onChange={(e) => handleStartChapterChange(e.target.value)}
                   className="border-input bg-transparent text-sm rounded-md border px-3 h-9 w-full appearance-none"
@@ -197,8 +198,9 @@ function LogEntryFormInner({
                 </select>
               </div>
               <div className="grid gap-2">
-                <Label>Start Verse</Label>
+                <Label htmlFor="startVerse">Start Verse</Label>
                 <select
+                  id="startVerse"
                   value={startVerse || ""}
                   onChange={(e) => setStartVerse(parseInt(e.target.value))}
                   className="border-input bg-transparent text-sm rounded-md border px-3 h-9 w-full appearance-none"
@@ -216,8 +218,9 @@ function LogEntryFormInner({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>End Chapter</Label>
+                <Label htmlFor="endChapter">End Chapter</Label>
                 <select
+                  id="endChapter"
                   value={endChapter || ""}
                   onChange={(e) => handleEndChapterChange(e.target.value)}
                   className="border-input bg-transparent text-sm rounded-md border px-3 h-9 w-full appearance-none"
@@ -231,8 +234,9 @@ function LogEntryFormInner({
                 </select>
               </div>
               <div className="grid gap-2">
-                <Label>End Verse</Label>
+                <Label htmlFor="endVerse">End Verse</Label>
                 <select
+                  id="endVerse"
                   value={endVerse || ""}
                   onChange={(e) => setEndVerse(parseInt(e.target.value))}
                   className="border-input bg-transparent text-sm rounded-md border px-3 h-9 w-full appearance-none"

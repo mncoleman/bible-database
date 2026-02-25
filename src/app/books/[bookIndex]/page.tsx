@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ export default function BookDetailPage({
 }) {
   const { bookIndex: bookIndexStr } = use(params);
   const bookIndex = parseInt(bookIndexStr);
+  if (isNaN(bookIndex) || bookIndex < 1 || bookIndex > 66) notFound();
   const { data: settings } = useUserSettings();
   const { data: entries = [] } = useFilteredLogEntries(settings?.look_back_date);
 
