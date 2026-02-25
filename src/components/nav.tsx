@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+import { AnimatedBibleLogo } from "@/components/bible/animated-bible-logo";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
@@ -153,20 +153,7 @@ export function Nav() {
           <div className="grid grid-cols-[1fr_auto_1fr] h-14 items-center gap-4">
             {/* Left: Brand */}
             <Link href="/today" className="col-start-1 flex items-center gap-2 font-semibold text-lg">
-              <Image
-                src="/logo-light.svg"
-                alt="Bible Logo"
-                width={32}
-                height={32}
-                className="dark:hidden"
-              />
-              <Image
-                src="/logo-dark.svg"
-                alt="Bible Logo"
-                width={32}
-                height={32}
-                className="hidden dark:block"
-              />
+              <AnimatedBibleLogo className="h-8 w-8" />
               <span>Bible</span>
             </Link>
 
