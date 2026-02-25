@@ -43,7 +43,7 @@ function SuggestionRow({
       startParsed.book,
       startParsed.chapter
     );
-    window.open(url, "_blank");
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   return (
