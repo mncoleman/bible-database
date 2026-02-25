@@ -151,6 +151,7 @@ export default function CalendarPage() {
             <button
               key={dateStr}
               onClick={() => setSelectedDate(dateStr)}
+              aria-label={`${format(day, "MMMM d")}${count > 0 ? `, ${count} verses read` : ""}`}
               className={cn(
                 "relative flex flex-col items-center justify-center p-1 rounded-md text-sm transition-colors min-h-[44px] gap-0.5",
                 !isSameMonth(day, currentMonth) && "text-muted-foreground/50",

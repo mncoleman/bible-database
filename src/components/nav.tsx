@@ -98,6 +98,7 @@ function BottomNav() {
         <Popover open={moreOpen} onOpenChange={setMoreOpen}>
           <PopoverTrigger asChild>
             <button
+              aria-label="More navigation options"
               className={cn(
                 "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-md transition-colors min-w-[4rem]",
                 isMoreActive || moreOpen
