@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { format, addDays } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,38 +51,16 @@ function SettingsForm({ settings }: { settings: NonNullable<ReturnType<typeof us
   const [accentDark, setAccentDark] = useState(settings.accent_dark || "0 0% 14.9%");
   const [chartDark, setChartDark] = useState(settings.chart_dark || "220 70% 50%");
 
-  const handleSaveReading = () => {
-    updateSettings.mutate(
-      {
-        daily_verse_count_goal: dailyGoal,
-        preferred_bible_version: bibleVersion,
-        preferred_bible_app: bibleApp,
-        look_back_date: lookBackDate || null,
-        goal_end_date: goalEndDate || null,
-      },
-      {
-        onSuccess: () => toast.success("Settings saved"),
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const autosave = useCallback((patch: Record<string, unknown>) => {
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      updateSettings.mutate(patch, {
+        onSuccess: () => toast.success("Saved"),
         onError: (error) => toast.error(error.message),
-      }
-    );
-  };
-
-  const handleSaveColors = () => {
-    updateSettings.mutate(
-      {
-        primary_light: primaryLight,
-        accent_light: accentLight,
-        chart_light: chartLight,
-        primary_dark: primaryDark,
-        accent_dark: accentDark,
-        chart_dark: chartDark,
-      },
-      {
-        onSuccess: () => toast.success("Colors saved"),
-        onError: (error) => toast.error(error.message),
-      }
-    );
-  };
+      });
+    }, 600);
+  }, [updateSettings]);
 
   const handleExport = () => {
     if (logEntries.length === 0) {
@@ -143,7 +121,7 @@ function SettingsForm({ settings }: { settings: NonNullable<ReturnType<typeof us
         <TabsContent value="reading" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Daily Goal</CardTitle>
+              <CardTitle className="text-base">Reading Plan</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-2">
@@ -153,11 +131,72 @@ function SettingsForm({ settings }: { settings: NonNullable<ReturnType<typeof us
                   type="number"
                   min={1}
                   value={dailyGoal}
-                  onChange={(e) => setDailyGoal(parseInt(e.target.value) || 1)}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value) || 1;
+                    setDailyGoal(v);
+                    autosave({ daily_verse_count_goal: v });
+                  }}
                 />
                 <p className="text-xs text-muted-foreground">
                   86 verses/day = read the whole Bible in 1 year
                 </p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="lookBackDate">Start date</Label>
+                <Input
+                  id="lookBackDate"
+                  type="date"
+                  value={lookBackDate}
+                  onChange={(e) => {
+                    setLookBackDate(e.target.value);
+                    autosave({ look_back_date: e.target.value || null });
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Entries before this date are excluded from progress calculations.
+                </p>
+                {lookBackDate && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-fit"
+                    onClick={() => {
+                      setLookBackDate("");
+                      autosave({ look_back_date: null });
+                    }}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="goalEndDate">End date</Label>
+                <Input
+                  id="goalEndDate"
+                  type="date"
+                  value={goalEndDate}
+                  min={format(addDays(new Date(), 1), "yyyy-MM-dd")}
+                  onChange={(e) => {
+                    setGoalEndDate(e.target.value);
+                    autosave({ goal_end_date: e.target.value || null });
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Your daily verse requirement is calculated from your plan dates.
+                </p>
+                {goalEndDate && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-fit"
+                    onClick={() => {
+                      setGoalEndDate("");
+                      autosave({ goal_end_date: null });
+                    }}
+                  >
+                    Clear
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -169,7 +208,10 @@ function SettingsForm({ settings }: { settings: NonNullable<ReturnType<typeof us
             <CardContent className="space-y-4">
               <div className="grid gap-2">
                 <Label>Bible Version</Label>
-                <Select value={bibleVersion} onValueChange={setBibleVersion}>
+                <Select value={bibleVersion} onValueChange={(v) => {
+                  setBibleVersion(v);
+                  autosave({ preferred_bible_version: v });
+                }}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -184,7 +226,10 @@ function SettingsForm({ settings }: { settings: NonNullable<ReturnType<typeof us
               </div>
               <div className="grid gap-2">
                 <Label>Bible App</Label>
-                <Select value={bibleApp} onValueChange={setBibleApp}>
+                <Select value={bibleApp} onValueChange={(v) => {
+                  setBibleApp(v);
+                  autosave({ preferred_bible_app: v });
+                }}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -200,72 +245,6 @@ function SettingsForm({ settings }: { settings: NonNullable<ReturnType<typeof us
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Start Date</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="lookBackDate">Only count readings from</Label>
-                <Input
-                  id="lookBackDate"
-                  type="date"
-                  value={lookBackDate}
-                  onChange={(e) => setLookBackDate(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Entries before this date will be excluded from progress
-                  calculations. Leave empty to count all readings.
-                </p>
-                {lookBackDate && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-fit"
-                    onClick={() => setLookBackDate("")}
-                  >
-                    Clear date
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Reading Goal</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="goalEndDate">Finish the Bible by</Label>
-                <Input
-                  id="goalEndDate"
-                  type="date"
-                  value={goalEndDate}
-                  min={format(addDays(new Date(), 1), "yyyy-MM-dd")}
-                  onChange={(e) => setGoalEndDate(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Set a target date and your daily verse requirement will be
-                  calculated automatically. View your plan status on the Today page.
-                </p>
-                {goalEndDate && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-fit"
-                    onClick={() => setGoalEndDate("")}
-                  >
-                    Clear goal
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Button onClick={handleSaveReading} disabled={updateSettings.isPending}>
-            {updateSettings.isPending ? "Saving..." : "Save Settings"}
-          </Button>
         </TabsContent>
 
         <TabsContent value="display" className="space-y-4 mt-4">
@@ -292,19 +271,19 @@ function SettingsForm({ settings }: { settings: NonNullable<ReturnType<typeof us
                   <ColorPicker
                     label="Primary"
                     value={primaryLight}
-                    onChange={setPrimaryLight}
+                    onChange={(v) => { setPrimaryLight(v); autosave({ primary_light: v }); }}
                     defaultValue="0 0% 9%"
                   />
                   <ColorPicker
                     label="Accent"
                     value={accentLight}
-                    onChange={setAccentLight}
+                    onChange={(v) => { setAccentLight(v); autosave({ accent_light: v }); }}
                     defaultValue="0 0% 96.1%"
                   />
                   <ColorPicker
                     label="Charts & Goal Line"
                     value={chartLight}
-                    onChange={setChartLight}
+                    onChange={(v) => { setChartLight(v); autosave({ chart_light: v }); }}
                     defaultValue="12 76% 61%"
                   />
                 </div>
@@ -316,27 +295,24 @@ function SettingsForm({ settings }: { settings: NonNullable<ReturnType<typeof us
                   <ColorPicker
                     label="Primary"
                     value={primaryDark}
-                    onChange={setPrimaryDark}
+                    onChange={(v) => { setPrimaryDark(v); autosave({ primary_dark: v }); }}
                     defaultValue="0 0% 98%"
                   />
                   <ColorPicker
                     label="Accent"
                     value={accentDark}
-                    onChange={setAccentDark}
+                    onChange={(v) => { setAccentDark(v); autosave({ accent_dark: v }); }}
                     defaultValue="0 0% 14.9%"
                   />
                   <ColorPicker
                     label="Charts & Goal Line"
                     value={chartDark}
-                    onChange={setChartDark}
+                    onChange={(v) => { setChartDark(v); autosave({ chart_dark: v }); }}
                     defaultValue="220 70% 50%"
                   />
                 </div>
               </div>
 
-              <Button onClick={handleSaveColors} disabled={updateSettings.isPending} className="w-full">
-                {updateSettings.isPending ? "Saving..." : "Save Colors"}
-              </Button>
             </CardContent>
           </Card>
 
