@@ -122,7 +122,7 @@ export default function ChecklistPage() {
                 </div>
               </AccordionTrigger>
               <AccordionContent>
-                <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 p-2">
+                <div className="grid grid-cols-4 sm:grid-cols-8 md:grid-cols-10 gap-2.5 p-2">
                   {Array.from({ length: chapterCount }, (_, i) => i + 1).map(
                     (ch) => {
                       const chapterVerses = Bible.getChapterVerseCount(
@@ -144,7 +144,7 @@ export default function ChecklistPage() {
                           type="button"
                           onClick={() => handleChapterToggle(book.bibleOrder, ch, chapterComplete)}
                           className={cn(
-                            "relative flex items-center justify-center w-full aspect-square rounded-md text-xs font-medium border cursor-pointer transition-colors",
+                            "relative flex items-center justify-center w-full aspect-square rounded-md text-sm font-medium border cursor-pointer transition-colors",
                             chapterComplete &&
                               "bg-primary text-primary-foreground border-primary hover:bg-primary/80",
                             chapterPartial &&

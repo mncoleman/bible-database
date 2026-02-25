@@ -162,10 +162,10 @@ function LogEntryFormInner({
             value={bookIndex ? String(bookIndex) : ""}
             onValueChange={handleBookChange}
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Select book" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper" className="max-h-[min(300px,50vh)]">
               {books.map((book) => (
                 <SelectItem
                   key={book.bibleOrder}
@@ -187,10 +187,10 @@ function LogEntryFormInner({
                   value={startChapter ? String(startChapter) : ""}
                   onValueChange={handleStartChapterChange}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Ch." />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" className="max-h-[min(300px,50vh)]">
                     {Array.from({ length: chapterCount }, (_, i) => i + 1).map(
                       (ch) => (
                         <SelectItem key={ch} value={String(ch)}>
@@ -207,10 +207,10 @@ function LogEntryFormInner({
                   value={startVerse ? String(startVerse) : ""}
                   onValueChange={(v) => setStartVerse(parseInt(v))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Vs." />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" className="max-h-[min(300px,50vh)]">
                     {Array.from(
                       { length: startVerseCount },
                       (_, i) => i + 1
@@ -231,10 +231,10 @@ function LogEntryFormInner({
                   value={endChapter ? String(endChapter) : ""}
                   onValueChange={handleEndChapterChange}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Ch." />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" className="max-h-[min(300px,50vh)]">
                     {Array.from({ length: chapterCount }, (_, i) => i + 1)
                       .filter((ch) => ch >= startChapter)
                       .map((ch) => (
@@ -251,10 +251,10 @@ function LogEntryFormInner({
                   value={endVerse ? String(endVerse) : ""}
                   onValueChange={(v) => setEndVerse(parseInt(v))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Vs." />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" className="max-h-[min(300px,50vh)]">
                     {Array.from(
                       { length: endVerseCount },
                       (_, i) => i + 1
