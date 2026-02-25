@@ -129,6 +129,12 @@
   color: hsl(var(--muted-foreground));
 }
 
+/* Prevent scroll chaining on select dropdowns */
+[data-slot="select-content"] {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -137,6 +143,11 @@
     margin: 0;
     padding: 0;
     overflow-x: hidden;
+  }
+  @media (max-width: 640px) {
+    html {
+      font-size: 18px;
+    }
   }
   .recharts-wrapper,
   .recharts-wrapper * {
