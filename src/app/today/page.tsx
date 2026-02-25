@@ -244,39 +244,24 @@ export default function TodayPage() {
               {planStatus.startDate && <>{planStatus.startDate} &rarr; </>}
               {planStatus.goalDate} ({planStatus.daysRemaining} days left)
             </p>
+            {planStatus.plannedDailyGoal !== null && (
+              <p className="text-xs text-muted-foreground">
+                {planStatus.plannedDailyGoal.toLocaleString()} verses/day
+              </p>
+            )}
           </CardHeader>
           <CardContent className="space-y-2">
-            {planStatus.plannedDailyGoal !== null && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Planned daily goal</span>
-                <span className="font-medium">{planStatus.plannedDailyGoal.toLocaleString()} verses</span>
-              </div>
-            )}
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Current daily needed</span>
               <span className="font-medium">{planStatus.currentDailyNeeded.toLocaleString()} verses</span>
             </div>
-            {planStatus.overallDiff !== null && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Overall</span>
-                <span className="font-medium">
-                  {planStatus.overallDiff >= 0
-                    ? `${planStatus.overallDiff.toLocaleString()} verses ahead`
-                    : `${Math.abs(planStatus.overallDiff).toLocaleString()} verses behind`}
-                </span>
-              </div>
-            )}
-            <div className="flex justify-between text-sm">
+<div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Read today to be on track</span>
               <span className="font-medium">
                 {planStatus.versesToGetOnTrack === 0
                   ? "Done for today!"
                   : `${planStatus.versesToGetOnTrack.toLocaleString()} verses`}
               </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Read today</span>
-              <span className="font-medium">{todayVerseCount.toLocaleString()} verses</span>
             </div>
           </CardContent>
         </Card>
