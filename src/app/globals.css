@@ -129,6 +129,39 @@
   color: hsl(var(--muted-foreground));
 }
 
+/* Enhanced shadows for better depth and visibility */
+[data-slot="card"] {
+  box-shadow: 0 2px 8px -2px rgb(0 0 0 / 0.08), 0 1px 3px -1px rgb(0 0 0 / 0.06);
+}
+.dark [data-slot="card"] {
+  box-shadow: 0 2px 10px -2px rgb(0 0 0 / 0.4), 0 1px 4px -1px rgb(0 0 0 / 0.3);
+}
+
+[data-slot="button"][data-variant="default"],
+[data-slot="button"][data-variant="outline"],
+[data-slot="button"][data-variant="secondary"] {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+}
+.dark [data-slot="button"][data-variant="default"],
+.dark [data-slot="button"][data-variant="outline"],
+.dark [data-slot="button"][data-variant="secondary"] {
+  box-shadow: 0 1px 4px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.2);
+}
+
+[data-slot="select-trigger"] {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.06);
+}
+.dark [data-slot="select-trigger"] {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.25);
+}
+
+[data-slot="dialog-content"] {
+  box-shadow: 0 8px 30px -4px rgb(0 0 0 / 0.15), 0 4px 12px -2px rgb(0 0 0 / 0.08);
+}
+.dark [data-slot="dialog-content"] {
+  box-shadow: 0 8px 30px -4px rgb(0 0 0 / 0.5), 0 4px 12px -2px rgb(0 0 0 / 0.4);
+}
+
 /* Prevent scroll chaining on select dropdowns */
 [data-slot="select-content"] {
   overscroll-behavior: contain;

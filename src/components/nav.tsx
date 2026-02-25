@@ -11,13 +11,17 @@ import {
   BarChart3,
   LineChart,
   Settings,
-  Menu,
+  MoreHorizontal,
   Sun,
   Moon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -28,6 +32,21 @@ const navItems = [
   { href: "/progress", label: "Progress", icon: BarChart3 },
   { href: "/metrics", label: "Metrics", icon: LineChart },
   { href: "/settings", label: "Settings", icon: Settings },
+];
+
+// Bottom nav: primary tabs
+const bottomNavItems = [
+  { href: "/today", label: "Today", icon: BookOpen },
+  { href: "/progress", label: "Progress", icon: BarChart3 },
+  { href: "/settings", label: "Settings", icon: Settings },
+];
+
+// "More" menu items (everything not in the bottom nav)
+const moreMenuItems = [
+  { href: "/books", label: "Books", icon: BookOpen },
+  { href: "/checklist", label: "Checklist", icon: CheckSquare },
+  { href: "/calendar", label: "Calendar", icon: Calendar },
+  { href: "/metrics", label: "Metrics", icon: LineChart },
 ];
 
 function ThemeToggle() {
@@ -45,89 +64,140 @@ function ThemeToggle() {
   );
 }
 
-export function Nav() {
+function BottomNav() {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  const isMoreActive = moreMenuItems.some(
+    (item) => pathname === item.href || pathname.startsWith(item.href + "/")
+  );
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container max-w-screen-xl px-4">
-        <div className="grid grid-cols-[1fr_auto_1fr] h-14 items-center gap-4">
-          {/* Left: Brand */}
-          <Link href="/today" className="col-start-1 flex items-center gap-2 font-semibold text-lg">
-            <Image
-              src="/logo-light.svg"
-              alt="Bible Logo"
-              width={32}
-              height={32}
-              className="dark:hidden"
-            />
-            <Image
-              src="/logo-dark.svg"
-              alt="Bible Logo"
-              width={32}
-              height={32}
-              className="hidden dark:block"
-            />
-            <span>Bible</span>
-          </Link>
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
+      <div className="flex items-center justify-around h-14 px-2">
+        {bottomNavItems.map((item) => {
+          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-md transition-colors min-w-[4rem]",
+                isActive
+                  ? "text-foreground"
+                  : "text-muted-foreground"
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="text-[0.625rem] leading-tight">{item.label}</span>
+            </Link>
+          );
+        })}
 
-          {/* Center: Desktop nav */}
-          <nav className="col-start-2 hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors",
-                  pathname === item.href || pathname.startsWith(item.href + "/")
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+        {/* More button with popover */}
+        <Popover open={moreOpen} onOpenChange={setMoreOpen}>
+          <PopoverTrigger asChild>
+            <button
+              className={cn(
+                "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-md transition-colors min-w-[4rem]",
+                isMoreActive || moreOpen
+                  ? "text-foreground"
+                  : "text-muted-foreground"
+              )}
+            >
+              <MoreHorizontal className="h-5 w-5" />
+              <span className="text-[0.625rem] leading-tight">More</span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            side="top"
+            align="end"
+            className="w-48 p-1"
+            sideOffset={12}
+          >
+            {moreMenuItems.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMoreOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 text-sm rounded-md transition-colors",
+                    isActive
+                      ? "bg-accent text-accent-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </PopoverContent>
+        </Popover>
+      </div>
+    </nav>
+  );
+}
 
-          {/* Right: Theme toggle & mobile menu */}
-          <div className="col-start-3 flex items-center gap-2 justify-end">
-            <ThemeToggle />
+export function Nav() {
+  const pathname = usePathname();
 
-            {/* Mobile nav */}
-            <Sheet open={open} onOpenChange={setOpen}>
-              <SheetTrigger asChild className="md:hidden">
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-64">
-                <nav className="flex flex-col gap-2 mt-8">
-                  {navItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setOpen(false)}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors",
-                        pathname === item.href ||
-                          pathname.startsWith(item.href + "/")
-                          ? "bg-accent text-accent-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                      )}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {item.label}
-                    </Link>
-                  ))}
-                </nav>
-              </SheetContent>
-            </Sheet>
+  return (
+    <>
+      {/* Top header bar */}
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container max-w-screen-xl px-4">
+          <div className="grid grid-cols-[1fr_auto_1fr] h-14 items-center gap-4">
+            {/* Left: Brand */}
+            <Link href="/today" className="col-start-1 flex items-center gap-2 font-semibold text-lg">
+              <Image
+                src="/logo-light.svg"
+                alt="Bible Logo"
+                width={32}
+                height={32}
+                className="dark:hidden"
+              />
+              <Image
+                src="/logo-dark.svg"
+                alt="Bible Logo"
+                width={32}
+                height={32}
+                className="hidden dark:block"
+              />
+              <span>Bible</span>
+            </Link>
+
+            {/* Center: Desktop nav */}
+            <nav className="col-start-2 hidden md:flex items-center gap-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors",
+                    pathname === item.href || pathname.startsWith(item.href + "/")
+                      ? "bg-accent text-accent-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+
+            {/* Right: Theme toggle */}
+            <div className="col-start-3 flex items-center gap-2 justify-end">
+              <ThemeToggle />
+            </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Bottom nav (mobile only) */}
+      <BottomNav />
+    </>
   );
 }

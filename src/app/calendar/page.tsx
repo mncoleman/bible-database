@@ -145,12 +145,14 @@ export default function CalendarPage() {
           const goalMet = count >= dailyGoal;
           const hasReading = count > 0;
 
+          const pct = dailyGoal > 0 ? Math.min(count / dailyGoal, 1) : 0;
+
           return (
             <button
               key={dateStr}
               onClick={() => setSelectedDate(dateStr)}
               className={cn(
-                "relative flex flex-col items-center justify-center p-1 rounded-md text-sm transition-colors min-h-[40px]",
+                "relative flex flex-col items-center justify-center p-1 rounded-md text-sm transition-colors min-h-[44px] gap-0.5",
                 !isSameMonth(day, currentMonth) && "text-muted-foreground/50",
                 isSelected && "bg-accent ring-1 ring-ring",
                 isToday(day) && !isSelected && "font-bold",
@@ -159,12 +161,15 @@ export default function CalendarPage() {
             >
               <span>{format(day, "d")}</span>
               {hasReading && (
-                <div
-                  className={cn(
-                    "w-1.5 h-1.5 rounded-full mt-0.5",
-                    goalMet ? "bg-primary" : "bg-primary/40"
-                  )}
-                />
+                <div className="w-full h-1 rounded-full bg-primary/15 overflow-hidden">
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all",
+                      goalMet ? "bg-primary" : "bg-primary/50"
+                    )}
+                    style={{ width: `${pct * 100}%` }}
+                  />
+                </div>
               )}
             </button>
           );

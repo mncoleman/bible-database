@@ -202,7 +202,7 @@ function SettingsForm({ settings }: { settings: NonNullable<ReturnType<typeof us
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Look-Back Date</CardTitle>
+              <CardTitle className="text-base">Start Date</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-2">

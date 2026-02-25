@@ -165,7 +165,7 @@ function LogEntryFormInner({
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select book" />
             </SelectTrigger>
-            <SelectContent position="popper" className="max-h-[min(300px,50vh)]">
+            <SelectContent>
               {books.map((book) => (
                 <SelectItem
                   key={book.bibleOrder}
@@ -183,88 +183,68 @@ function LogEntryFormInner({
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label>Start Chapter</Label>
-                <Select
-                  value={startChapter ? String(startChapter) : ""}
-                  onValueChange={handleStartChapterChange}
+                <select
+                  value={startChapter || ""}
+                  onChange={(e) => handleStartChapterChange(e.target.value)}
+                  className="border-input bg-transparent text-sm rounded-md border px-3 h-9 w-full appearance-none"
                 >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Ch." />
-                  </SelectTrigger>
-                  <SelectContent position="popper" className="max-h-[min(300px,50vh)]">
-                    {Array.from({ length: chapterCount }, (_, i) => i + 1).map(
-                      (ch) => (
-                        <SelectItem key={ch} value={String(ch)}>
-                          {ch}
-                        </SelectItem>
-                      )
-                    )}
-                  </SelectContent>
-                </Select>
+                  <option value="" disabled>Ch.</option>
+                  {Array.from({ length: chapterCount }, (_, i) => i + 1).map(
+                    (ch) => (
+                      <option key={ch} value={ch}>{ch}</option>
+                    )
+                  )}
+                </select>
               </div>
               <div className="grid gap-2">
                 <Label>Start Verse</Label>
-                <Select
-                  value={startVerse ? String(startVerse) : ""}
-                  onValueChange={(v) => setStartVerse(parseInt(v))}
+                <select
+                  value={startVerse || ""}
+                  onChange={(e) => setStartVerse(parseInt(e.target.value))}
+                  className="border-input bg-transparent text-sm rounded-md border px-3 h-9 w-full appearance-none"
                 >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Vs." />
-                  </SelectTrigger>
-                  <SelectContent position="popper" className="max-h-[min(300px,50vh)]">
-                    {Array.from(
-                      { length: startVerseCount },
-                      (_, i) => i + 1
-                    ).map((v) => (
-                      <SelectItem key={v} value={String(v)}>
-                        {v}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <option value="" disabled>Vs.</option>
+                  {Array.from(
+                    { length: startVerseCount },
+                    (_, i) => i + 1
+                  ).map((v) => (
+                    <option key={v} value={v}>{v}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label>End Chapter</Label>
-                <Select
-                  value={endChapter ? String(endChapter) : ""}
-                  onValueChange={handleEndChapterChange}
+                <select
+                  value={endChapter || ""}
+                  onChange={(e) => handleEndChapterChange(e.target.value)}
+                  className="border-input bg-transparent text-sm rounded-md border px-3 h-9 w-full appearance-none"
                 >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Ch." />
-                  </SelectTrigger>
-                  <SelectContent position="popper" className="max-h-[min(300px,50vh)]">
-                    {Array.from({ length: chapterCount }, (_, i) => i + 1)
-                      .filter((ch) => ch >= startChapter)
-                      .map((ch) => (
-                        <SelectItem key={ch} value={String(ch)}>
-                          {ch}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                  <option value="" disabled>Ch.</option>
+                  {Array.from({ length: chapterCount }, (_, i) => i + 1)
+                    .filter((ch) => ch >= startChapter)
+                    .map((ch) => (
+                      <option key={ch} value={ch}>{ch}</option>
+                    ))}
+                </select>
               </div>
               <div className="grid gap-2">
                 <Label>End Verse</Label>
-                <Select
-                  value={endVerse ? String(endVerse) : ""}
-                  onValueChange={(v) => setEndVerse(parseInt(v))}
+                <select
+                  value={endVerse || ""}
+                  onChange={(e) => setEndVerse(parseInt(e.target.value))}
+                  className="border-input bg-transparent text-sm rounded-md border px-3 h-9 w-full appearance-none"
                 >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Vs." />
-                  </SelectTrigger>
-                  <SelectContent position="popper" className="max-h-[min(300px,50vh)]">
-                    {Array.from(
-                      { length: endVerseCount },
-                      (_, i) => i + 1
-                    ).map((v) => (
-                      <SelectItem key={v} value={String(v)}>
-                        {v}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <option value="" disabled>Vs.</option>
+                  {Array.from(
+                    { length: endVerseCount },
+                    (_, i) => i + 1
+                  ).map((v) => (
+                    <option key={v} value={v}>{v}</option>
+                  ))}
+                </select>
               </div>
             </div>
           </>

@@ -188,7 +188,7 @@ export default function ProgressPage() {
         </CardHeader>
         <CardContent className="divide-y">
           <StatRow
-            label="Look Back Date"
+            label="Start Date"
             value={lookBackDate ? format(parseISO(lookBackDate), "MMM d, yyyy") : "All time"}
           />
           <StatRow label="Daily Verse Count Goal" value={dailyGoal.toLocaleString()} />
@@ -234,7 +234,7 @@ export default function ProgressPage() {
       {lookBackDate && daysSinceLookBack > 0 && (
         <OutlookCard
           title="Your Historical Outlook"
-          description={`Based on your reading habits since your Look Back Date (${daysSinceLookBack} days).`}
+          description={`Based on your reading habits since your Start Date (${daysSinceLookBack} days).`}
           avgDaily={historicalAvgDaily}
           daysToFinish={historicalDaysToFinish}
           dateToFinish={historicalFinishDate}

@@ -48,7 +48,7 @@ export default function RootLayout({
           <QueryProvider>
             <CustomColorProvider />
             <Nav />
-            <main className="container max-w-screen-xl mx-auto px-4 py-6">
+            <main className="container max-w-screen-xl mx-auto px-4 py-6 pb-20 md:pb-6">
               {children}
             </main>
             <Toaster />
