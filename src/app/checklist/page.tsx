@@ -84,7 +84,7 @@ export default function ChecklistPage() {
       <h1 className="text-2xl font-bold">Checklist</h1>
 
       {/* Daily Goal — sticky */}
-      <div className="sticky top-14 z-10 bg-background py-3 -mx-1 px-1 space-y-2">
+      <div className="sticky top-14 z-10 py-3 -mx-1 px-1 space-y-2">
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Daily Goal</span>
           <span>
@@ -122,7 +122,7 @@ export default function ChecklistPage() {
                 </div>
               </AccordionTrigger>
               <AccordionContent>
-                <div className="grid grid-cols-4 sm:grid-cols-8 md:grid-cols-10 gap-2.5 p-2">
+                <div className="flex flex-wrap gap-1 p-1">
                   {Array.from({ length: chapterCount }, (_, i) => i + 1).map(
                     (ch) => {
                       const chapterVerses = Bible.getChapterVerseCount(
@@ -145,7 +145,7 @@ export default function ChecklistPage() {
                           aria-label={`${book.name} chapter ${ch}${chapterComplete ? ", complete" : chapterPartial ? ", partial" : ""}`}
                           onClick={() => handleChapterToggle(book.bibleOrder, ch, chapterComplete)}
                           className={cn(
-                            "relative flex items-center justify-center w-full aspect-square rounded-md text-sm font-medium border cursor-pointer transition-colors",
+                            "relative flex items-center justify-center rounded text-xs font-medium border cursor-pointer transition-colors h-8 w-8",
                             chapterComplete &&
                               "bg-primary text-primary-foreground border-primary hover:bg-primary/80",
                             chapterPartial &&
@@ -155,11 +155,7 @@ export default function ChecklistPage() {
                               "bg-muted border-border hover:bg-accent"
                           )}
                         >
-                          {chapterComplete ? (
-                            <Check className="h-3.5 w-3.5" />
-                          ) : (
-                            ch
-                          )}
+                          {ch}
                         </button>
                       );
                     }

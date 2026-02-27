@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ColorPicker } from "@/components/color-picker";
+import { GradientColorPicker } from "@/components/gradient-color-picker";
 import { useUserSettings, useUpdateUserSettings } from "@/hooks/use-user-settings";
 import { useLogEntries } from "@/hooks/use-log-entries";
 import {
@@ -262,6 +263,21 @@ function SettingsForm({ settings }: { settings: NonNullable<ReturnType<typeof us
 
           <Card>
             <CardHeader>
+              <CardTitle className="text-base">Background Gradient</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                The background gradient shows through Liquid Glass surfaces.
+              </p>
+              <div className="space-y-3 pl-2">
+                <GradientColorPicker mode="light" />
+                <GradientColorPicker mode="dark" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle className="text-base">Custom Colors</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -322,7 +338,7 @@ function SettingsForm({ settings }: { settings: NonNullable<ReturnType<typeof us
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Add Bible to your home screen for a native app experience with offline access.
+                Add Bible Tracker to your home screen for a native app experience with offline access.
               </p>
 
               <div className="space-y-4 text-sm">

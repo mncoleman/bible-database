@@ -8,8 +8,8 @@ import { CustomColorProvider } from "@/components/custom-color-provider";
 
 export const metadata: Metadata = {
   title: {
-    default: "Bible",
-    template: "%s | Bible",
+    default: "Bible Tracker",
+    template: "%s | Bible Tracker",
   },
   description: "Personal Bible reading tracker",
   manifest: "/manifest.json",
@@ -18,14 +18,14 @@ export const metadata: Metadata = {
     apple: "/apple-icon.png",
   },
   openGraph: {
-    title: "Bible",
+    title: "Bible Tracker",
     description: "Personal Bible reading tracker",
     type: "website",
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Bible",
+    title: "Bible Tracker",
   },
 };
 

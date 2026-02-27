@@ -1,4 +1,4 @@
-# My Bible Log
+# Bible Tracker
 
 Personal Bible reading tracker. Ported from mybiblelog-nuxt.
 
@@ -9,7 +9,7 @@ Personal Bible reading tracker. Ported from mybiblelog-nuxt.
 - **Backend:** Supabase (auth + Postgres with RLS)
 - **State:** @tanstack/react-query for server state
 - **PWA:** Serwist service worker for offline caching
-- **Design:** Monochromatic grayscale (customizable via settings), system fonts
+- **Design:** Liquid Glass design language (Apple-inspired frosted glass), system fonts
 
 ## Commands
 
@@ -38,9 +38,10 @@ src/
 │   ├── ui/                 # shadcn/ui primitives (DO NOT edit directly)
 │   ├── bible/              # App components (log-entry-card, segment-bar, etc.)
 │   ├── forms/              # LogEntryForm dialog
-│   ├── nav.tsx             # Top nav + mobile bottom nav bar
-│   ├── custom-color-provider.tsx  # Applies user color prefs to CSS vars
-│   └── color-picker.tsx    # HSL color picker for settings
+│   ├── nav.tsx             # Top nav (Liquid Glass) + mobile bottom nav bar
+│   ├── custom-color-provider.tsx  # Applies user color prefs + gradient to CSS vars
+│   ├── color-picker.tsx    # HSL color picker for settings
+│   └── gradient-color-picker.tsx  # Background gradient color + brightness picker
 ├── hooks/                  # React Query hooks (log entries, settings, verse counts)
 └── lib/
     ├── bible/              # Core Bible data layer (see below)
@@ -78,6 +79,24 @@ Types are in `src/lib/supabase/types.ts`. The `useFilteredLogEntries` hook respe
 
 Users can customize `--primary`, `--accent`, and `--chart-1` CSS variables via Settings > Display. The `CustomColorProvider` component applies these per light/dark theme. Colors are stored as HSL strings (e.g., `"220 70% 50%"`).
 
+## Background Gradient
+
+A customizable background gradient (`--gradient-color`, `--gradient-intensity`) shows through the Liquid Glass surfaces. Color and brightness are per-theme, stored in localStorage (keys: `gradient-color-light`, `gradient-color-dark`, `gradient-intensity-light`, `gradient-intensity-dark`). Defaults to blue (`217 90% 61%` light, `217 80% 55%` dark) at 15% intensity. The `GradientColorPicker` component in Settings > Display provides color + brightness slider.
+
+## Liquid Glass Design System
+
+All UI surfaces use Apple-inspired Liquid Glass:
+- **CSS variables** in `globals.css`: `--glass-bg`, `--glass-blur`, `--glass-saturate`, `--glass-border`, `--glass-shadow`, `--glass-shadow-inset`, `--glass-highlight` (separate light/dark values)
+- **Cards**: Translucent (45% opacity), `backdrop-filter: blur(24px)`, 3D layered box shadows (1→2→4→8→16px stacked), inset edge highlights
+- **Nav bars** (top + bottom): Glass bg with blur/saturate via inline styles on `<header>` and `<nav>`
+- **Dialogs**: Heavily fogged (93% light / 92% dark, 40px blur) for form readability
+- **Popovers, Select dropdowns**: Medium glass treatment
+- **Tabs**: Glass list with layered shadow, glass active trigger
+- **Buttons**: Ghost buttons materialise glass on hover; outline/secondary use glass bg
+- **Hover effects**: Background/shadow/opacity only — never use `scale()` or `transform` on interactive elements inside flex/grid layouts as it causes layout shifts and text distortion
+- **Accessibility**: `@supports` fallback for no `backdrop-filter`, `prefers-reduced-transparency` media query
+- **Scrollbar**: Hidden globally via `scrollbar-width: none` + `::-webkit-scrollbar { display: none }`
+
 ## Settings Autosave
 
 All settings autosave with a 600ms debounce. No manual save buttons.
@@ -94,11 +113,12 @@ All settings autosave with a 600ms debounce. No manual save buttons.
 
 ## Style Guidelines
 
-- Keep UI minimal and clean. Default grayscale palette, customizable via settings.
+- Keep UI minimal and clean. Liquid Glass surfaces with customizable blue gradient background.
 - Use `text-muted-foreground` for secondary text, `text-primary` for emphasis.
 - Progress indicators: `<Progress>` bar for percentages, `<SegmentBar>` for read/unread visualization.
 - Calendar days use mini progress bars showing reading vs daily goal.
 - Toast notifications via `sonner` for success/error feedback.
-- Enhanced shadows on cards, buttons, selects, and dialogs (light + dark mode).
+- 3D layered box shadows on cards and tabs (stacked 1→2→4→8→16px). Never use CSS `transform: scale()` on elements inside flex/grid — it causes layout shifts.
 - Icons from `lucide-react` only.
 - Mobile font size bumped to 18px root for better readability.
+- SVG bible logo: 1024x1024 viewBox, rendered at `h-7 w-7` in nav. Has book cover, paper-toned pages, inner shadows via SVG gradients, spine highlight, and animated flipping page.
