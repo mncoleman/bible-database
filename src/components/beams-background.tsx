@@ -29,7 +29,7 @@ export function BeamsBackground() {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null;
+  if (!mounted || !isDark) return null;
 
   const color = isDark
     ? (settings?.beam_color_dark ?? BEAMS_DEFAULTS.colorDark)

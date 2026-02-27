@@ -1,6 +1,7 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { useState, useMemo, useRef } from "react";
+import { Check, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -8,6 +9,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
@@ -43,6 +45,32 @@ export default function ChecklistPage() {
     0
   );
   const dailyProgress = Math.min((todayVerseCount / dailyGoal) * 100, 100);
+
+  const [compact, setCompact] = useState(true);
+
+  // Track reveal transition: when toggling from compact→reveal, we note
+  // which books are "newly appearing" so we can fade them in via CSS.
+  const prevCompactRef = useRef(compact);
+  const justRevealedRef = useRef(false);
+  if (prevCompactRef.current !== compact) {
+    justRevealedRef.current = prevCompactRef.current && !compact;
+    prevCompactRef.current = compact;
+  }
+
+  const completedBookIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const book of books) {
+      const total = Bible.getBookVerseCount(book.bibleOrder);
+      const read = Bible.countUniqueBookRangeVerses(book.bibleOrder, ranges);
+      if (read >= total) ids.add(String(book.bibleOrder));
+    }
+    return ids;
+  }, [books, ranges]);
+
+  const visibleBooks = compact
+    ? books.filter((b) => !completedBookIds.has(String(b.bibleOrder)))
+    : books;
+
 
   const handleChapterToggle = (bookIndex: number, chapter: number, isComplete: boolean) => {
     if (isComplete) {
@@ -81,7 +109,24 @@ export default function ChecklistPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Checklist</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Checklist</h1>
+        {completedBookIds.size > 0 && (
+          <Button variant="ghost" size="sm" onClick={() => setCompact((v) => !v)} className="gap-1.5 text-muted-foreground">
+            {compact ? (
+              <>
+                <ChevronsUpDown className="h-4 w-4" />
+                Reveal
+              </>
+            ) : (
+              <>
+                <ChevronsDownUp className="h-4 w-4" />
+                Compact
+              </>
+            )}
+          </Button>
+        )}
+      </div>
 
       {/* Daily Goal — sticky */}
       <div className="sticky top-14 z-10 py-3 -mx-1 px-1 space-y-2">
@@ -95,7 +140,7 @@ export default function ChecklistPage() {
       </div>
 
       <Accordion type="multiple" className="w-full">
-        {books.map((book) => {
+        {visibleBooks.map((book) => {
           const chapterCount = book.chapterCount;
           const totalVerses = Bible.getBookVerseCount(book.bibleOrder);
           const readVerses = Bible.countUniqueBookRangeVerses(
@@ -103,13 +148,18 @@ export default function ChecklistPage() {
             ranges
           );
           const isComplete = readVerses >= totalVerses;
+          const fadeIn = justRevealedRef.current && isComplete;
           const pct =
             totalVerses > 0
               ? ((readVerses / totalVerses) * 100).toFixed(0)
               : "0";
 
           return (
-            <AccordionItem key={book.bibleOrder} value={String(book.bibleOrder)}>
+            <AccordionItem
+              key={book.bibleOrder}
+              value={String(book.bibleOrder)}
+              className={fadeIn ? "animate-fade-in" : undefined}
+            >
               <AccordionTrigger className="hover:no-underline">
                 <div className="flex items-center gap-3 flex-1">
                   {isComplete && <Check className="h-4 w-4 text-primary" />}
