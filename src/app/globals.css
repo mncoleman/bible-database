@@ -433,6 +433,15 @@
   display: none;
 }
 
+/* Checklist reveal fade-in */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out both;
+}
+
 /* Animated bible logo page flip */
 @keyframes bible-page-flip {
   0%, 20% { transform: scaleX(1); opacity: 1; }
