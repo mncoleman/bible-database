@@ -15,6 +15,11 @@ function isValidHsl(value: string | null): value is string {
   return h >= 0 && h <= 360 && s >= 0 && s <= 100 && l >= 0 && l <= 100;
 }
 
+export const GRADIENT_STORAGE_KEY_LIGHT = "gradient-color-light";
+export const GRADIENT_STORAGE_KEY_DARK = "gradient-color-dark";
+export const GRADIENT_INTENSITY_KEY_LIGHT = "gradient-intensity-light";
+export const GRADIENT_INTENSITY_KEY_DARK = "gradient-intensity-dark";
+
 export function CustomColorProvider() {
   const { data: settings } = useUserSettings();
   const { resolvedTheme } = useTheme();
@@ -38,11 +43,34 @@ export function CustomColorProvider() {
       }
     });
 
+    // Apply gradient color and intensity from localStorage
+    try {
+      const gradientKey = isDark ? GRADIENT_STORAGE_KEY_DARK : GRADIENT_STORAGE_KEY_LIGHT;
+      const stored = localStorage.getItem(gradientKey);
+      if (isValidHsl(stored)) {
+        root.style.setProperty("--gradient-color", stored);
+      } else {
+        root.style.removeProperty("--gradient-color");
+      }
+
+      const intensityKey = isDark ? GRADIENT_INTENSITY_KEY_DARK : GRADIENT_INTENSITY_KEY_LIGHT;
+      const intensity = localStorage.getItem(intensityKey);
+      if (intensity !== null && !isNaN(parseFloat(intensity))) {
+        root.style.setProperty("--gradient-intensity", intensity);
+      } else {
+        root.style.removeProperty("--gradient-intensity");
+      }
+    } catch {
+      // localStorage unavailable (SSR, private browsing)
+    }
+
     // Cleanup: remove all custom properties when unmounting
     return () => {
       COLOR_PROPERTIES.forEach((prop) => {
         root.style.removeProperty(prop);
       });
+      root.style.removeProperty("--gradient-color");
+      root.style.removeProperty("--gradient-intensity");
     };
   }, [settings, resolvedTheme]);
 

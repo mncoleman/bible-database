@@ -73,7 +73,7 @@ function BottomNav() {
   );
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))', WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))', borderTop: '1px solid var(--glass-border)', boxShadow: 'var(--glass-shadow-inset), 0 -2px 12px rgba(0,0,0,0.06)' }}>
       <div className="flex items-center justify-around h-14 px-2">
         {bottomNavItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -82,10 +82,11 @@ function BottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-md transition-colors min-w-[4rem]",
+                "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg min-w-[4rem]",
+                "transition-[color,opacity] duration-200 ease-out",
                 isActive
                   ? "text-foreground"
-                  : "text-muted-foreground"
+                  : "text-muted-foreground active:opacity-60"
               )}
             >
               <item.icon className="h-5 w-5" />
@@ -100,10 +101,11 @@ function BottomNav() {
             <button
               aria-label="More navigation options"
               className={cn(
-                "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-md transition-colors min-w-[4rem]",
+                "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg min-w-[4rem]",
+                "transition-[color,opacity] duration-200 ease-out",
                 isMoreActive || moreOpen
                   ? "text-foreground"
-                  : "text-muted-foreground"
+                  : "text-muted-foreground active:opacity-60"
               )}
             >
               <MoreHorizontal className="h-5 w-5" />
@@ -124,10 +126,11 @@ function BottomNav() {
                   href={item.href}
                   onClick={() => setMoreOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 text-sm rounded-md transition-colors",
+                    "flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg",
+                    "transition-[background,color] duration-200 ease-out",
                     isActive
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                      ? "bg-white/20 dark:bg-white/10 text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/15 dark:hover:bg-white/8 active:opacity-60"
                   )}
                 >
                   <item.icon className="h-4 w-4" />
@@ -147,37 +150,54 @@ export function Nav() {
 
   return (
     <>
-      {/* Top header bar */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container max-w-screen-xl px-4">
-          <div className="grid grid-cols-[1fr_auto_1fr] h-14 items-center gap-4">
+      {/* Top header bar — Liquid Glass */}
+      <header
+        className="sticky top-0 z-50 w-full"
+        style={{
+          background: 'var(--glass-bg)',
+          backdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
+          WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
+          borderBottom: '1px solid var(--glass-border)',
+          boxShadow: 'var(--glass-shadow-inset), 0 2px 12px rgba(0,0,0,0.06)',
+        }}
+      >
+        <div className="container max-w-screen-xl px-4 mx-auto">
+          <div className="flex h-14 items-center">
             {/* Left: Brand */}
-            <Link href="/today" className="col-start-1 flex items-center gap-2 font-semibold text-lg">
-              <AnimatedBibleLogo className="h-8 w-8" />
-              <span>Bible</span>
+            <Link href="/today" className="flex items-center gap-2 font-semibold text-lg shrink-0">
+              <AnimatedBibleLogo className="h-7 w-7" />
+              <span>Bible Tracker</span>
             </Link>
 
-            {/* Center: Desktop nav */}
-            <nav className="col-start-2 hidden md:flex items-center gap-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors",
-                    pathname === item.href || pathname.startsWith(item.href + "/")
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              ))}
+            {/* Center: Desktop nav — flex-1 centers the nav links */}
+            <nav className="hidden md:flex items-center justify-center gap-1 flex-1">
+              {navItems.map((item) => {
+                const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg border border-transparent transition-[background,box-shadow,color,border-color] duration-250 ease-out",
+                      isActive
+                        ? "text-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-white/20 dark:hover:bg-white/10"
+                    )}
+                    style={isActive ? {
+                      background: 'var(--glass-bg)',
+                      borderColor: 'var(--glass-border)',
+                      boxShadow: 'var(--glass-shadow-inset), 0 1px 4px rgba(0,0,0,0.06)',
+                    } : undefined}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
             </nav>
 
             {/* Right: Theme toggle */}
-            <div className="col-start-3 flex items-center gap-2 justify-end">
+            <div className="flex items-center gap-2 ml-auto md:ml-0 shrink-0">
               <ThemeToggle />
             </div>
           </div>
