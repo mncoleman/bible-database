@@ -115,8 +115,13 @@ function BottomNav() {
           <PopoverContent
             side="top"
             align="end"
-            className="w-48 p-1"
+            className="w-48 p-1 bg-transparent border-[var(--glass-border)] shadow-[var(--glass-shadow-inset),0_4px_24px_rgba(0,0,0,0.12)]"
             sideOffset={12}
+            style={{
+              background: 'var(--glass-bg)',
+              backdropFilter: 'blur(40px) saturate(var(--glass-saturate))',
+              WebkitBackdropFilter: 'blur(40px) saturate(var(--glass-saturate))',
+            }}
           >
             {moreMenuItems.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
