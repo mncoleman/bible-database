@@ -55,8 +55,13 @@ export function CustomColorProvider() {
 
       const intensityKey = isDark ? GRADIENT_INTENSITY_KEY_DARK : GRADIENT_INTENSITY_KEY_LIGHT;
       const intensity = localStorage.getItem(intensityKey);
-      if (intensity !== null && !isNaN(parseFloat(intensity))) {
-        root.style.setProperty("--gradient-intensity", intensity);
+      if (intensity !== null) {
+        const parsed = parseFloat(intensity);
+        if (!isNaN(parsed) && isFinite(parsed) && parsed >= 0 && parsed <= 1) {
+          root.style.setProperty("--gradient-intensity", String(parsed));
+        } else {
+          root.style.removeProperty("--gradient-intensity");
+        }
       } else {
         root.style.removeProperty("--gradient-intensity");
       }
