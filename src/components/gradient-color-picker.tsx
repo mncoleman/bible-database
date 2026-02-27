@@ -77,10 +77,13 @@ export function GradientColorPicker({ mode }: { mode: "light" | "dark" }) {
   }, [mode]);
 
   const applyIntensity = useCallback((val: string) => {
-    setIntensity(val);
+    const parsed = parseFloat(val);
+    if (isNaN(parsed) || !isFinite(parsed) || parsed < 0 || parsed > 0.40) return;
+    const canonical = String(parsed);
+    setIntensity(canonical);
     const key = mode === "light" ? GRADIENT_INTENSITY_KEY_LIGHT : GRADIENT_INTENSITY_KEY_DARK;
-    try { localStorage.setItem(key, val); } catch {}
-    document.documentElement.style.setProperty("--gradient-intensity", val);
+    try { localStorage.setItem(key, canonical); } catch {}
+    document.documentElement.style.setProperty("--gradient-intensity", canonical);
   }, [mode]);
 
   const handleReset = () => {
