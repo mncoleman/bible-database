@@ -5,6 +5,8 @@ import { QueryProvider } from "@/components/query-provider";
 import { Nav } from "@/components/nav";
 import { Toaster } from "@/components/ui/sonner";
 import { CustomColorProvider } from "@/components/custom-color-provider";
+import { BeamsBackground } from "@/components/beams-background";
+import { PageTransition } from "@/components/page-transition";
 
 export const metadata: Metadata = {
   title: {
@@ -55,9 +57,10 @@ export default function RootLayout({
         >
           <QueryProvider>
             <CustomColorProvider />
+            <BeamsBackground />
             <Nav />
-            <main className="container max-w-screen-xl mx-auto px-4 py-6 pb-20 md:pb-6">
-              {children}
+            <main className="container max-w-screen-xl mx-auto px-4 py-6 pb-20 md:pb-6 overflow-x-hidden">
+              <PageTransition>{children}</PageTransition>
             </main>
             <Toaster duration={2000} />
           </QueryProvider>
