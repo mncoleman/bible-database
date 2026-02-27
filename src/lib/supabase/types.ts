@@ -25,6 +25,16 @@ export type UserSettings = {
   primary_dark: string | null;
   accent_dark: string | null;
   chart_dark: string | null;
+  // Beam background settings
+  beam_color_light: string | null;
+  beam_color_dark: string | null;
+  beam_width: number | null;
+  beam_height: number | null;
+  beam_count: number | null;
+  beam_speed: number | null;
+  beam_noise_intensity: number | null;
+  beam_noise_scale: number | null;
+  beam_rotation: number | null;
   created_at: string;
   updated_at: string;
 };

@@ -85,9 +85,6 @@
   --glass-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.55);
   --glass-highlight: linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
 
-  /* Background gradient — customizable via settings */
-  --gradient-color: 217 90% 61%;
-  --gradient-intensity: 0.15;
 }
 
 .dark {
@@ -133,9 +130,6 @@
   --glass-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   --glass-highlight: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 50%, transparent 100%);
 
-  /* Background gradient — customizable via settings */
-  --gradient-color: 217 80% 55%;
-  --gradient-intensity: 0.15;
 }
 
 [data-slot="progress-indicator"] {
@@ -490,10 +484,5 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
       'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
       sans-serif;
-    /* Background gradient — gives glass elements depth and color to refract */
-    background-image:
-      radial-gradient(ellipse at 15% 0%, hsl(var(--gradient-color) / var(--gradient-intensity)) 0%, transparent 55%),
-      radial-gradient(ellipse at 85% 100%, hsl(var(--gradient-color) / calc(var(--gradient-intensity) * 0.67)) 0%, transparent 55%);
-    background-attachment: fixed;
   }
 }
