@@ -361,7 +361,7 @@ function TodayCarousel({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto snap-y snap-proximity"
+        className="flex-1 overflow-y-auto snap-y snap-proximity rounded-xl [&_[data-slot=card]]:rounded-none [&_[data-slot=card]]:border-0 [&>div+div]:border-t [&>div+div]:border-border"
         style={{
           height: cardHeight ? `${cardHeight * 2}px` : "11rem",
           overscrollBehavior: "contain",
