@@ -195,7 +195,7 @@ export default function ChecklistPage() {
                           aria-label={`${book.name} chapter ${ch}${chapterComplete ? ", complete" : chapterPartial ? ", partial" : ""}`}
                           onClick={() => handleChapterToggle(book.bibleOrder, ch, chapterComplete)}
                           className={cn(
-                            "relative flex items-center justify-center rounded text-xs font-medium border cursor-pointer transition-colors h-8",
+                            "relative flex items-center justify-center rounded text-xs font-medium border cursor-pointer transition-colors aspect-square",
                             chapterComplete &&
                               "bg-primary text-primary-foreground border-primary hover:bg-primary/80",
                             chapterPartial &&
@@ -206,6 +206,9 @@ export default function ChecklistPage() {
                           )}
                         >
                           {ch}
+                          {chapterComplete && (
+                            <Check className="absolute top-0.5 right-0.5 h-2.5 w-2.5" />
+                          )}
                         </button>
                       );
                     }
