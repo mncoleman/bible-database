@@ -307,46 +307,72 @@ function TodayCarousel({
   bibleApp: BibleApp;
   bibleVersion: BibleVersion;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  const touchStartY = useRef(0);
 
-  const go = useCallback(
-    (dir: 1 | -1) =>
-      setActiveIndex((i) => Math.max(0, Math.min(entries.length - 1, i + dir))),
-    [entries.length]
-  );
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || !el.firstElementChild) return;
+    const itemHeight = el.firstElementChild.getBoundingClientRect().height;
+    if (itemHeight === 0) return;
+    const index = Math.round(el.scrollTop / itemHeight);
+    setActiveIndex(Math.min(index, entries.length - 1));
+  }, [entries.length]);
 
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
+  const scrollTo = useCallback((index: number) => {
+    const el = scrollRef.current;
+    if (!el || !el.firstElementChild) return;
+    const itemHeight = el.firstElementChild.getBoundingClientRect().height;
+    el.scrollTo({ top: index * itemHeight, behavior: "smooth" });
   }, []);
 
-  const onTouchEnd = useCallback(
-    (e: React.TouchEvent) => {
-      const dy = touchStartY.current - e.changedTouches[0].clientY;
-      if (Math.abs(dy) > 30) go(dy > 0 ? 1 : -1);
-    },
-    [go]
-  );
-
-  const active = entries[activeIndex];
+  // Measure the first card to set the container height to exactly one card
+  const [cardHeight, setCardHeight] = useState<number | null>(null);
+  const measuredRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      const ro = new ResizeObserver((observedEntries) => {
+        const h = observedEntries[0]?.borderBoxSize?.[0]?.blockSize
+          ?? observedEntries[0]?.contentRect.height;
+        if (h && h > 0) setCardHeight(h);
+      });
+      ro.observe(node);
+      return () => ro.disconnect();
+    }
+  }, []);
 
   return (
     <div className="space-y-2">
-      <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-        <LogEntryCard
-          key={active.id}
-          entry={active}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          bibleApp={bibleApp}
-          bibleVersion={bibleVersion}
-        />
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="overflow-y-auto snap-y snap-mandatory"
+        style={{
+          height: cardHeight ? `${cardHeight}px` : "5.5rem",
+          overscrollBehavior: "contain",
+          scrollbarWidth: "none",
+        }}
+      >
+        {entries.map((entry, i) => (
+          <div
+            key={entry.id}
+            ref={i === 0 ? measuredRef : undefined}
+            className="snap-start"
+          >
+            <LogEntryCard
+              entry={entry}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              bibleApp={bibleApp}
+              bibleVersion={bibleVersion}
+            />
+          </div>
+        ))}
       </div>
       <div className="flex items-center justify-center gap-1.5">
         {entries.map((entry, i) => (
           <button
             key={entry.id}
-            onClick={() => setActiveIndex(i)}
+            onClick={() => scrollTo(i)}
             className={`h-1.5 rounded-full transition-all ${
               i === activeIndex
                 ? "w-4 bg-primary"
