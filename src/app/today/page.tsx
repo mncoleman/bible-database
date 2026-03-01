@@ -313,26 +313,28 @@ function TodayCarousel({
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const index = Math.round(el.scrollLeft / el.clientWidth);
+    const itemHeight = el.firstElementChild?.clientHeight ?? el.clientHeight;
+    const index = Math.round(el.scrollTop / itemHeight);
     setActiveIndex(index);
   }, []);
 
   const scrollTo = useCallback((index: number) => {
     const el = scrollRef.current;
     if (!el) return;
-    el.scrollTo({ left: index * el.clientWidth, behavior: "smooth" });
+    const itemHeight = el.firstElementChild?.clientHeight ?? el.clientHeight;
+    el.scrollTo({ top: index * itemHeight, behavior: "smooth" });
   }, []);
 
   return (
-    <div className="space-y-2">
+    <div className="flex gap-2 items-center">
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
-        style={{ scrollbarWidth: "none" }}
+        className="flex-1 overflow-y-auto snap-y snap-mandatory scrollbar-hide overscroll-contain"
+        style={{ scrollbarWidth: "none", maxHeight: "5rem" }}
       >
         {entries.map((entry) => (
-          <div key={entry.id} className="min-w-full snap-center px-0.5">
+          <div key={entry.id} className="snap-start">
             <LogEntryCard
               entry={entry}
               onEdit={onEdit}
@@ -343,15 +345,15 @@ function TodayCarousel({
           </div>
         ))}
       </div>
-      <div className="flex items-center justify-center gap-1.5">
+      <div className="flex flex-col items-center gap-1.5">
         {entries.map((entry, i) => (
           <button
             key={entry.id}
             onClick={() => scrollTo(i)}
-            className={`h-1.5 rounded-full transition-all ${
+            className={`w-1.5 rounded-full transition-all ${
               i === activeIndex
-                ? "w-4 bg-primary"
-                : "w-1.5 bg-muted-foreground/30"
+                ? "h-4 bg-primary"
+                : "h-1.5 bg-muted-foreground/30"
             }`}
             aria-label={`Go to reading ${i + 1}`}
           />
