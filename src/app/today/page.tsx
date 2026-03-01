@@ -307,53 +307,50 @@ function TodayCarousel({
   bibleApp: BibleApp;
   bibleVersion: BibleVersion;
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const touchStartY = useRef(0);
 
-  const handleScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const itemHeight = el.firstElementChild?.clientHeight ?? el.clientHeight;
-    const index = Math.round(el.scrollTop / itemHeight);
-    setActiveIndex(index);
+  const go = useCallback(
+    (dir: 1 | -1) =>
+      setActiveIndex((i) => Math.max(0, Math.min(entries.length - 1, i + dir))),
+    [entries.length]
+  );
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
   }, []);
 
-  const scrollTo = useCallback((index: number) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const itemHeight = el.firstElementChild?.clientHeight ?? el.clientHeight;
-    el.scrollTo({ top: index * itemHeight, behavior: "smooth" });
-  }, []);
+  const onTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      const dy = touchStartY.current - e.changedTouches[0].clientY;
+      if (Math.abs(dy) > 30) go(dy > 0 ? 1 : -1);
+    },
+    [go]
+  );
+
+  const active = entries[activeIndex];
 
   return (
-    <div className="flex gap-2 items-center">
-      <div
-        ref={scrollRef}
-        onScroll={handleScroll}
-        className="flex-1 overflow-y-auto snap-y snap-mandatory scrollbar-hide overscroll-contain"
-        style={{ scrollbarWidth: "none", maxHeight: "5rem" }}
-      >
-        {entries.map((entry) => (
-          <div key={entry.id} className="snap-start">
-            <LogEntryCard
-              entry={entry}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              bibleApp={bibleApp}
-              bibleVersion={bibleVersion}
-            />
-          </div>
-        ))}
+    <div className="space-y-2">
+      <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <LogEntryCard
+          key={active.id}
+          entry={active}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          bibleApp={bibleApp}
+          bibleVersion={bibleVersion}
+        />
       </div>
-      <div className="flex flex-col items-center gap-1.5">
+      <div className="flex items-center justify-center gap-1.5">
         {entries.map((entry, i) => (
           <button
             key={entry.id}
-            onClick={() => scrollTo(i)}
-            className={`w-1.5 rounded-full transition-all ${
+            onClick={() => setActiveIndex(i)}
+            className={`h-1.5 rounded-full transition-all ${
               i === activeIndex
-                ? "h-4 bg-primary"
-                : "h-1.5 bg-muted-foreground/30"
+                ? "w-4 bg-primary"
+                : "w-1.5 bg-muted-foreground/30"
             }`}
             aria-label={`Go to reading ${i + 1}`}
           />
