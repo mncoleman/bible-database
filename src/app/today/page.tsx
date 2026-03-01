@@ -310,6 +310,22 @@ function TodayCarousel({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
+  // Prevent touch events from reaching the swipe-navigation handler on
+  // PageTransition so vertical scrolling inside the carousel isn't hijacked.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const stop = (e: TouchEvent) => e.stopPropagation();
+    el.addEventListener("touchstart", stop, { passive: true });
+    el.addEventListener("touchmove", stop, { passive: true });
+    el.addEventListener("touchend", stop, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", stop);
+      el.removeEventListener("touchmove", stop);
+      el.removeEventListener("touchend", stop);
+    };
+  }, []);
+
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el || !el.firstElementChild) return;
@@ -326,7 +342,7 @@ function TodayCarousel({
     el.scrollTo({ top: index * itemHeight, behavior: "smooth" });
   }, []);
 
-  // Measure the first card to set the container height to exactly one card
+  // Measure the first card to set the container height
   const [cardHeight, setCardHeight] = useState<number | null>(null);
   const measuredRef = useCallback((node: HTMLDivElement | null) => {
     if (node) {
@@ -345,11 +361,12 @@ function TodayCarousel({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto snap-y snap-mandatory"
+        className="flex-1 overflow-y-auto snap-y snap-proximity"
         style={{
           height: cardHeight ? `${cardHeight * 2}px` : "11rem",
           overscrollBehavior: "contain",
           scrollbarWidth: "none",
+          WebkitOverflowScrolling: "touch",
         }}
       >
         {entries.map((entry, i) => (
