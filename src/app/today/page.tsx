@@ -206,17 +206,16 @@ export default function TodayPage() {
             No readings logged today. Tap &quot;Log Reading&quot; to get started.
           </p>
         ) : (
-          <div className="max-h-[10rem] overflow-y-auto scrollbar-hide snap-y snap-mandatory overscroll-contain space-y-2">
+          <div className="space-y-2">
             {todayEntries.map((entry) => (
-              <div key={entry.id} className="snap-start">
-                <LogEntryCard
-                  entry={entry}
-                  onEdit={(e) => setEditingEntry(e)}
-                  onDelete={handleDelete}
-                  bibleApp={(settings?.preferred_bible_app as BibleApp) || "BIBLEGATEWAY"}
-                  bibleVersion={(settings?.preferred_bible_version as BibleVersion) || "NASB2020"}
-                />
-              </div>
+              <LogEntryCard
+                key={entry.id}
+                entry={entry}
+                onEdit={(e) => setEditingEntry(e)}
+                onDelete={handleDelete}
+                bibleApp={(settings?.preferred_bible_app as BibleApp) || "BIBLEGATEWAY"}
+                bibleVersion={(settings?.preferred_bible_version as BibleVersion) || "NASB2020"}
+              />
             ))}
           </div>
         )}
