@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { differenceInDays, parseISO, format } from "date-fns";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -196,7 +196,7 @@ export default function TodayPage() {
         <Progress value={animatedOverall} />
       </div>
 
-      {/* Today's entries — scrollable, no scrollbar */}
+      {/* Today's entries — carousel */}
       <div className="space-y-3">
         <h2 className="text-lg font-semibold">Today&apos;s Readings</h2>
         {isLoading ? (
@@ -205,20 +205,22 @@ export default function TodayPage() {
           <p className="text-muted-foreground text-sm">
             No readings logged today. Tap &quot;Log Reading&quot; to get started.
           </p>
+        ) : todayEntries.length === 1 ? (
+          <LogEntryCard
+            entry={todayEntries[0]}
+            onEdit={(e) => setEditingEntry(e)}
+            onDelete={handleDelete}
+            bibleApp={(settings?.preferred_bible_app as BibleApp) || "BIBLEGATEWAY"}
+            bibleVersion={(settings?.preferred_bible_version as BibleVersion) || "NASB2020"}
+          />
         ) : (
-          <div className="max-h-[10rem] overflow-y-auto scrollbar-hide snap-y snap-mandatory overscroll-contain space-y-2">
-            {todayEntries.map((entry) => (
-              <div key={entry.id} className="snap-start">
-                <LogEntryCard
-                  entry={entry}
-                  onEdit={(e) => setEditingEntry(e)}
-                  onDelete={handleDelete}
-                  bibleApp={(settings?.preferred_bible_app as BibleApp) || "BIBLEGATEWAY"}
-                  bibleVersion={(settings?.preferred_bible_version as BibleVersion) || "NASB2020"}
-                />
-              </div>
-            ))}
-          </div>
+          <TodayCarousel
+            entries={todayEntries}
+            onEdit={(e) => setEditingEntry(e)}
+            onDelete={handleDelete}
+            bibleApp={(settings?.preferred_bible_app as BibleApp) || "BIBLEGATEWAY"}
+            bibleVersion={(settings?.preferred_bible_version as BibleVersion) || "NASB2020"}
+          />
         )}
       </div>
 
@@ -288,6 +290,73 @@ export default function TodayPage() {
         hideDate
         isLoading={updateEntry.isPending}
       />
+    </div>
+  );
+}
+
+function TodayCarousel({
+  entries,
+  onEdit,
+  onDelete,
+  bibleApp,
+  bibleVersion,
+}: {
+  entries: LogEntry[];
+  onEdit: (entry: LogEntry) => void;
+  onDelete: (id: string) => void;
+  bibleApp: BibleApp;
+  bibleVersion: BibleVersion;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const index = Math.round(el.scrollLeft / el.clientWidth);
+    setActiveIndex(index);
+  }, []);
+
+  const scrollTo = useCallback((index: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ left: index * el.clientWidth, behavior: "smooth" });
+  }, []);
+
+  return (
+    <div className="space-y-2">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+        style={{ scrollbarWidth: "none" }}
+      >
+        {entries.map((entry) => (
+          <div key={entry.id} className="min-w-full snap-center px-0.5">
+            <LogEntryCard
+              entry={entry}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              bibleApp={bibleApp}
+              bibleVersion={bibleVersion}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center justify-center gap-1.5">
+        {entries.map((entry, i) => (
+          <button
+            key={entry.id}
+            onClick={() => scrollTo(i)}
+            className={`h-1.5 rounded-full transition-all ${
+              i === activeIndex
+                ? "w-4 bg-primary"
+                : "w-1.5 bg-muted-foreground/30"
+            }`}
+            aria-label={`Go to reading ${i + 1}`}
+          />
+        ))}
+      </div>
     </div>
   );
 }
