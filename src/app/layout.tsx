@@ -59,7 +59,7 @@ export default function RootLayout({
             <CustomColorProvider />
             <BeamsBackground />
             <Nav />
-            <main className="container max-w-screen-xl mx-auto px-4 py-6 pb-20 md:pb-6 overflow-x-hidden">
+            <main className="container max-w-screen-xl mx-auto px-4 py-6 pb-20 md:pb-6">
               <PageTransition>{children}</PageTransition>
             </main>
             <Toaster duration={2000} />

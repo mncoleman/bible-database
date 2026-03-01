@@ -129,7 +129,7 @@ export default function ChecklistPage() {
       </div>
 
       {/* Daily Goal — sticky */}
-      <div className="sticky top-14 z-10 py-3 -mx-1 px-1 space-y-2">
+      <div className="sticky top-14 z-10 py-3 -mx-1 px-1 space-y-2 rounded-lg" style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))', WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))' }}>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Daily Goal</span>
           <span>
