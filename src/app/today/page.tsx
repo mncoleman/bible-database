@@ -84,8 +84,8 @@ export default function TodayPage() {
     const overallDiff = expectedVerses !== null ? totalReadVerses - expectedVerses : null;
 
     // Verses to read today to get on track for the current day
-    // If currentDailyNeeded <= plannedDailyGoal, user is already on track → 0
-    const versesToGetOnTrack = Math.max(0, remainingVerses - plannedDailyGoal * daysRemaining);
+    // Negative means user is ahead by that many verses
+    const versesToGetOnTrack = remainingVerses - plannedDailyGoal * daysRemaining;
 
     return {
       goalDate: format(parseISO(goalEndDate), "MMM d, yyyy"),
@@ -251,8 +251,8 @@ export default function TodayPage() {
 <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Read today to be on track</span>
               <span className="font-medium">
-                {planStatus.versesToGetOnTrack === 0
-                  ? "Done for today!"
+                {planStatus.versesToGetOnTrack <= 0
+                  ? `${Math.abs(planStatus.versesToGetOnTrack).toLocaleString()} verses ahead`
                   : `${planStatus.versesToGetOnTrack.toLocaleString()} verses`}
               </span>
             </div>
