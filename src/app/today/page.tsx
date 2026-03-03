@@ -83,11 +83,9 @@ export default function TodayPage() {
       : null;
     const overallDiff = expectedVerses !== null ? totalReadVerses - expectedVerses : null;
 
-    // Verses to read today so tomorrow's daily needed = plannedDailyGoal
-    // Formula: remainingVerses - plannedDailyGoal * (daysRemaining - 1)
-    const versesToGetOnTrack = daysRemaining > 1
-      ? Math.max(0, remainingVerses - plannedDailyGoal * (daysRemaining - 1))
-      : Math.max(0, remainingVerses);
+    // Verses to read today to get on track for the current day
+    // If currentDailyNeeded <= plannedDailyGoal, user is already on track → 0
+    const versesToGetOnTrack = Math.max(0, remainingVerses - plannedDailyGoal * daysRemaining);
 
     return {
       goalDate: format(parseISO(goalEndDate), "MMM d, yyyy"),
