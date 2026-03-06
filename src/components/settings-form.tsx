@@ -15,7 +15,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ColorPicker } from "@/components/color-picker";
-import { BeamsColorPicker, BeamsSliders } from "@/components/beams-settings";
 import { useUserSettings, useUpdateUserSettings } from "@/hooks/use-user-settings";
 import { useLogEntries } from "@/hooks/use-log-entries";
 import {
@@ -253,22 +252,6 @@ export function SettingsForm({ settings }: { settings: NonNullable<ReturnType<ty
                 Use the theme toggle in the navigation bar to switch between
                 light and dark mode.
               </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Background Beams</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Animated light beams show through Liquid Glass surfaces.
-              </p>
-              <div className="space-y-3 pl-2">
-                <BeamsColorPicker mode="light" value={settings.beam_color_light ?? "#4287f5"} autosave={autosave} />
-                <BeamsColorPicker mode="dark" value={settings.beam_color_dark ?? "#4287f5"} autosave={autosave} />
-              </div>
-              <BeamsSliders settings={settings} autosave={autosave} />
             </CardContent>
           </Card>
 
