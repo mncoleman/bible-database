@@ -90,9 +90,8 @@ export function SettingsForm({ settings }: { settings: NonNullable<ReturnType<ty
       URL.revokeObjectURL(url);
 
       toast.success(`Exported ${logEntries.length} entries`);
-    } catch (error) {
+    } catch {
       toast.error("Failed to export data");
-      console.error(error);
     }
   };
 
@@ -125,9 +124,10 @@ export function SettingsForm({ settings }: { settings: NonNullable<ReturnType<ty
                   id="dailyGoal"
                   type="number"
                   min={1}
+                  max={31102}
                   value={dailyGoal}
                   onChange={(e) => {
-                    const v = parseInt(e.target.value) || 1;
+                    const v = Math.max(1, Math.min(31102, parseInt(e.target.value) || 1));
                     setDailyGoal(v);
                     autosave({ daily_verse_count_goal: v });
                   }}

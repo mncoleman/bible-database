@@ -8,8 +8,8 @@ export const NAV_ROUTES = [
   "/settings",
 ] as const;
 
-/** Routes accessible via swipe on mobile (bottom nav pages, minus Settings which opens as a sheet) */
-export const SWIPE_ROUTES = ["/today", "/progress"] as const;
+/** Routes accessible via swipe on mobile (bottom nav pages) */
+export const SWIPE_ROUTES = ["/today", "/checklist", "/progress"] as const;
 
 const NAV_ORDER: Record<string, number> = Object.fromEntries(
   NAV_ROUTES.map((route, i) => [route, i])
