@@ -37,16 +37,16 @@ const navItems = [
 // Bottom nav: primary tabs
 const bottomNavItems = [
   { href: "/today", label: "Today", icon: BookOpen },
+  { href: "/checklist", label: "Checklist", icon: CheckSquare },
   { href: "/progress", label: "Progress", icon: BarChart3 },
-  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 // "More" menu items (everything not in the bottom nav)
 const moreMenuItems = [
   { href: "/books", label: "Books", icon: BookOpen },
-  { href: "/checklist", label: "Checklist", icon: CheckSquare },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/metrics", label: "Metrics", icon: LineChart },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 function ThemeToggle() {

@@ -236,6 +236,12 @@ export default function ChecklistPage() {
                           {chapterComplete && (
                             <Check className="absolute top-0.5 right-0.5 h-2.5 w-2.5" />
                           )}
+                          <span className={cn(
+                            "absolute bottom-0.5 left-0.5 text-[0.45rem] leading-none tabular-nums",
+                            chapterComplete ? "opacity-70" : "opacity-50"
+                          )}>
+                            {chapterVerses}
+                          </span>
                         </button>
                       );
                     }
