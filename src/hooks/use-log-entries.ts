@@ -72,7 +72,35 @@ export function useCreateLogEntry() {
       if (error) throw error;
       return data as LogEntry;
     },
-    onSuccess: () => {
+    onMutate: async (newEntry) => {
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEY] });
+      const previousAll = queryClient.getQueryData<LogEntry[]>([QUERY_KEY]);
+      const previousByDate = queryClient.getQueryData<LogEntry[]>([QUERY_KEY, "date", newEntry.date]);
+
+      const optimistic: LogEntry = {
+        id: `temp-${Date.now()}`,
+        user_id: "",
+        date: newEntry.date,
+        start_verse_id: newEntry.start_verse_id,
+        end_verse_id: newEntry.end_verse_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      queryClient.setQueryData<LogEntry[]>([QUERY_KEY], (old = []) => [optimistic, ...old]);
+      queryClient.setQueryData<LogEntry[]>([QUERY_KEY, "date", newEntry.date], (old = []) => [optimistic, ...old]);
+
+      return { previousAll, previousByDate, date: newEntry.date };
+    },
+    onError: (_err, _newEntry, context) => {
+      if (context?.previousAll !== undefined) {
+        queryClient.setQueryData([QUERY_KEY], context.previousAll);
+      }
+      if (context?.previousByDate !== undefined) {
+        queryClient.setQueryData([QUERY_KEY, "date", context.date], context.previousByDate);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
     },
   });
@@ -107,7 +135,36 @@ export function useUpdateLogEntry() {
       if (error) throw error;
       return data as LogEntry;
     },
-    onSuccess: () => {
+    onMutate: async ({ id, ...updates }) => {
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEY] });
+      const previousAll = queryClient.getQueryData<LogEntry[]>([QUERY_KEY]);
+
+      const applyUpdate = (entries: LogEntry[] | undefined) =>
+        (entries ?? []).map((e) => (e.id === id ? { ...e, ...updates } : e));
+
+      queryClient.setQueryData<LogEntry[]>([QUERY_KEY], applyUpdate);
+
+      // Update any by-date queries that contain this entry
+      const entry = previousAll?.find((e) => e.id === id);
+      const affectedDates = new Set<string>();
+      if (entry) affectedDates.add(entry.date);
+      if (updates.date) affectedDates.add(updates.date);
+      affectedDates.forEach((date) => {
+        queryClient.setQueryData<LogEntry[]>([QUERY_KEY, "date", date], applyUpdate);
+      });
+
+      return { previousAll, affectedDates };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousAll !== undefined) {
+        queryClient.setQueryData([QUERY_KEY], context.previousAll);
+      }
+      context?.affectedDates?.forEach((date) => {
+        const byDate = context.previousAll?.filter((e) => e.date === date);
+        if (byDate) queryClient.setQueryData([QUERY_KEY, "date", date], byDate);
+      });
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
     },
   });
@@ -162,7 +219,34 @@ export function useDeleteLogEntry() {
         .eq("user_id", user.id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEY] });
+      const previousAll = queryClient.getQueryData<LogEntry[]>([QUERY_KEY]);
+
+      const entry = previousAll?.find((e) => e.id === id);
+      queryClient.setQueryData<LogEntry[]>([QUERY_KEY], (old = []) =>
+        old.filter((e) => e.id !== id)
+      );
+      if (entry) {
+        queryClient.setQueryData<LogEntry[]>([QUERY_KEY, "date", entry.date], (old = []) =>
+          old.filter((e) => e.id !== id)
+        );
+      }
+
+      return { previousAll, deletedEntry: entry };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previousAll !== undefined) {
+        queryClient.setQueryData([QUERY_KEY], context.previousAll);
+      }
+      if (context?.deletedEntry) {
+        const entry = context.deletedEntry;
+        queryClient.setQueryData<LogEntry[]>([QUERY_KEY, "date", entry.date], (old = []) =>
+          [...old, entry].sort((a, b) => b.created_at.localeCompare(a.created_at))
+        );
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
     },
   });
