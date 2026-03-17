@@ -104,7 +104,9 @@ export default function ChecklistPage() {
         return;
       }
       toDelete.forEach((e) => {
-        deleteEntry.mutate(e.id);
+        deleteEntry.mutate(e.id, {
+          onError: (error) => toast.error(error.message),
+        });
       });
     } else {
       // Check: create entry for the full chapter
@@ -113,6 +115,8 @@ export default function ChecklistPage() {
         date: today,
         start_verse_id: Bible.makeVerseId(bookIndex, chapter, 1),
         end_verse_id: Bible.makeVerseId(bookIndex, chapter, lastVerse),
+      }, {
+        onError: (error) => toast.error(error.message),
       });
     }
   };
