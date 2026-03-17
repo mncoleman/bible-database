@@ -114,11 +114,8 @@ export default function TodayPage() {
     start_verse_id: number;
     end_verse_id: number;
   }) => {
+    setFormOpen(false);
     createEntry.mutate(entry, {
-      onSuccess: () => {
-        setFormOpen(false);
-        toast.success("Reading logged");
-      },
       onError: (error) => {
         toast.error(error.message);
       },
@@ -131,13 +128,10 @@ export default function TodayPage() {
     end_verse_id: number;
   }) => {
     if (!editingEntry) return;
+    setEditingEntry(null);
     updateEntry.mutate(
       { id: editingEntry.id, ...entry },
       {
-        onSuccess: () => {
-          setEditingEntry(null);
-          toast.success("Reading updated");
-        },
         onError: (error) => {
           toast.error(error.message);
         },
@@ -156,7 +150,6 @@ export default function TodayPage() {
 
   const handleDelete = (id: string) => {
     deleteEntry.mutate(id, {
-      onSuccess: () => toast.success("Reading deleted"),
       onError: (error) => toast.error(error.message),
     });
   };
