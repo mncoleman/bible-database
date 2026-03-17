@@ -62,7 +62,25 @@ export function useUpdateUserSettings() {
         return data as UserSettings;
       }
     },
-    onSuccess: () => {
+    onMutate: async (updates) => {
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEY] });
+      const previous = queryClient.getQueryData<UserSettings | null>([QUERY_KEY]);
+
+      if (previous) {
+        queryClient.setQueryData<UserSettings | null>([QUERY_KEY], {
+          ...previous,
+          ...updates,
+        });
+      }
+
+      return { previous };
+    },
+    onError: (_err, _updates, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData([QUERY_KEY], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
     },
   });

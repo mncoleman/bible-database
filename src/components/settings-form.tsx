@@ -55,7 +55,6 @@ export function SettingsForm({ settings }: { settings: NonNullable<ReturnType<ty
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       updateSettings.mutate(patch, {
-        onSuccess: () => toast.success("Saved"),
         onError: (error) => toast.error(error.message),
       });
     }, 600);
