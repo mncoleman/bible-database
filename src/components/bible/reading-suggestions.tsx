@@ -47,19 +47,20 @@ function SuggestionRow({
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 py-2">
-      <div className="flex-1 min-w-0">
+    <div className="flex flex-col justify-center py-2 overflow-hidden">
+      <div className="min-w-0 flex-1 flex flex-col justify-center">
         <p className="text-sm font-medium truncate">{rec.label}</p>
         <p className="text-xs text-muted-foreground truncate">
           {rec.description}
         </p>
       </div>
-      <div className="flex gap-1.5 shrink-0">
-        <Button variant="outline" size="sm" onClick={handleRead}>
+      <div className="flex gap-2 mt-4">
+        <Button variant="outline" size="lg" className="flex-1 min-w-0 text-base" onClick={handleRead}>
           Read
         </Button>
         <Button
-          size="sm"
+          size="lg"
+          className="flex-1 min-w-0 text-base"
           onClick={() => onLog(rec.startVerseId, rec.endVerseId)}
         >
           Log
@@ -96,13 +97,13 @@ export function ReadingSuggestions({
       <h2 className="text-lg font-semibold">Suggested Reading</h2>
 
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="pt-3 pb-2">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <ArrowRight className="h-4 w-4" />
             Continue Reading
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="-mt-3 pt-0 pb-3">
           <SuggestionRow
             rec={continueReading}
             bibleApp={bibleApp}

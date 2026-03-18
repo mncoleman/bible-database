@@ -243,6 +243,14 @@ const runtimeCaching = [
     }),
   },
 
+  // --- Supabase catch-all: never cache other Supabase endpoints ---
+  {
+    matcher: ({ url }: { url: URL }) => url.hostname.endsWith(".supabase.co"),
+    handler: new NetworkOnly({
+      networkTimeoutSeconds: 10,
+    }),
+  },
+
   // --- Cross-origin catch-all ---
   {
     matcher: ({ sameOrigin }: { sameOrigin: boolean }) => !sameOrigin,
@@ -281,6 +289,13 @@ self.addEventListener("activate", (event) => {
       );
     })()
   );
+});
+
+// Clear Supabase cached data on logout to prevent data leaking to next user
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "CLEAR_AUTH_CACHE") {
+    caches.delete("supabase-rest");
+  }
 });
 
 serwist.addEventListeners();
