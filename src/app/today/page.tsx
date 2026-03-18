@@ -320,6 +320,12 @@ function TodayCarousel({
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el || !el.firstElementChild) return;
+    // If scrolled to the bottom (within 2px tolerance), activate the last dot
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+    if (atBottom) {
+      setActiveIndex(entries.length - 1);
+      return;
+    }
     const itemHeight = el.firstElementChild.getBoundingClientRect().height;
     if (itemHeight === 0) return;
     const index = Math.round(el.scrollTop / itemHeight);

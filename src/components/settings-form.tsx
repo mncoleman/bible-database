@@ -97,6 +97,10 @@ export function SettingsForm({ settings }: { settings: NonNullable<ReturnType<ty
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    // Clear cached Supabase data so it doesn't leak to the next user
+    if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: "CLEAR_AUTH_CACHE" });
+    }
     router.push("/login");
   };
 
