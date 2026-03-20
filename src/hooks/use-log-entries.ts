@@ -77,7 +77,7 @@ export function useCreateLogEntry() {
       const previousAll = queryClient.getQueryData<LogEntry[]>([QUERY_KEY]);
       const previousByDate = queryClient.getQueryData<LogEntry[]>([QUERY_KEY, "date", newEntry.date]);
 
-      const tempId = `temp-${Date.now()}`;
+      const tempId = `temp-${Date.now()}-${Math.random()}`;
       const optimistic: LogEntry = {
         id: tempId,
         user_id: "",
@@ -93,16 +93,12 @@ export function useCreateLogEntry() {
 
       return { previousAll, previousByDate, date: newEntry.date, tempId };
     },
-    onSuccess: (data, _variables, context) => {
-      // Replace the optimistic temp entry with real server data
-      if (context?.tempId) {
-        queryClient.setQueryData<LogEntry[]>([QUERY_KEY], (old = []) =>
-          old.map((e) => (e.id === context.tempId ? data : e))
-        );
-        queryClient.setQueryData<LogEntry[]>([QUERY_KEY, "date", data.date], (old = []) =>
-          old.map((e) => (e.id === context.tempId ? data : e))
-        );
-      }
+    onSuccess: (realEntry, _variables, context) => {
+      if (!context?.tempId) return;
+      const replace = (entries: LogEntry[] | undefined) =>
+        (entries ?? []).map((e) => (e.id === context.tempId ? realEntry : e));
+      queryClient.setQueryData<LogEntry[]>([QUERY_KEY], replace);
+      queryClient.setQueryData<LogEntry[]>([QUERY_KEY, "date", realEntry.date], replace);
     },
     onError: (_err, _newEntry, context) => {
       if (context?.previousAll !== undefined) {
@@ -167,14 +163,11 @@ export function useUpdateLogEntry() {
 
       return { previousAll, affectedDates };
     },
-    onSuccess: (data) => {
-      // Replace optimistic data with real server data
-      queryClient.setQueryData<LogEntry[]>([QUERY_KEY], (old = []) =>
-        old.map((e) => (e.id === data.id ? data : e))
-      );
-      queryClient.setQueryData<LogEntry[]>([QUERY_KEY, "date", data.date], (old = []) =>
-        old.map((e) => (e.id === data.id ? data : e))
-      );
+    onSuccess: (realEntry) => {
+      const applyReal = (entries: LogEntry[] | undefined) =>
+        (entries ?? []).map((e) => (e.id === realEntry.id ? realEntry : e));
+      queryClient.setQueryData<LogEntry[]>([QUERY_KEY], applyReal);
+      queryClient.setQueryData<LogEntry[]>([QUERY_KEY, "date", realEntry.date], applyReal);
     },
     onError: (_err, _vars, context) => {
       if (context?.previousAll !== undefined) {
