@@ -77,8 +77,9 @@ export function useCreateLogEntry() {
       const previousAll = queryClient.getQueryData<LogEntry[]>([QUERY_KEY]);
       const previousByDate = queryClient.getQueryData<LogEntry[]>([QUERY_KEY, "date", newEntry.date]);
 
+      const tempId = `temp-${Date.now()}`;
       const optimistic: LogEntry = {
-        id: `temp-${Date.now()}`,
+        id: tempId,
         user_id: "",
         date: newEntry.date,
         start_verse_id: newEntry.start_verse_id,
@@ -90,7 +91,18 @@ export function useCreateLogEntry() {
       queryClient.setQueryData<LogEntry[]>([QUERY_KEY], (old = []) => [optimistic, ...old]);
       queryClient.setQueryData<LogEntry[]>([QUERY_KEY, "date", newEntry.date], (old = []) => [optimistic, ...old]);
 
-      return { previousAll, previousByDate, date: newEntry.date };
+      return { previousAll, previousByDate, date: newEntry.date, tempId };
+    },
+    onSuccess: (data, _variables, context) => {
+      // Replace the optimistic temp entry with real server data
+      if (context?.tempId) {
+        queryClient.setQueryData<LogEntry[]>([QUERY_KEY], (old = []) =>
+          old.map((e) => (e.id === context.tempId ? data : e))
+        );
+        queryClient.setQueryData<LogEntry[]>([QUERY_KEY, "date", data.date], (old = []) =>
+          old.map((e) => (e.id === context.tempId ? data : e))
+        );
+      }
     },
     onError: (_err, _newEntry, context) => {
       if (context?.previousAll !== undefined) {
@@ -101,7 +113,7 @@ export function useCreateLogEntry() {
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+      return queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
     },
   });
 }
@@ -155,6 +167,15 @@ export function useUpdateLogEntry() {
 
       return { previousAll, affectedDates };
     },
+    onSuccess: (data) => {
+      // Replace optimistic data with real server data
+      queryClient.setQueryData<LogEntry[]>([QUERY_KEY], (old = []) =>
+        old.map((e) => (e.id === data.id ? data : e))
+      );
+      queryClient.setQueryData<LogEntry[]>([QUERY_KEY, "date", data.date], (old = []) =>
+        old.map((e) => (e.id === data.id ? data : e))
+      );
+    },
     onError: (_err, _vars, context) => {
       if (context?.previousAll !== undefined) {
         queryClient.setQueryData([QUERY_KEY], context.previousAll);
@@ -165,7 +186,7 @@ export function useUpdateLogEntry() {
       });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+      return queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
     },
   });
 }
@@ -247,7 +268,7 @@ export function useDeleteLogEntry() {
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+      return queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
     },
   });
 }
