@@ -129,13 +129,15 @@ const runtimeCaching = [
     }),
   },
 
-  // --- Supabase REST API: stale-while-revalidate for reads ---
-  // This is the key optimization: show cached data instantly, refresh in background
+  // --- Supabase REST API: network-first for reads ---
+  // Must be NetworkFirst (not StaleWhileRevalidate) so that after mutations,
+  // React Query refetches always get fresh server data. SWR would return stale
+  // cached data instantly, causing optimistic updates to revert.
   {
     matcher: ({ url }: { url: URL }) =>
       url.hostname.endsWith(".supabase.co") && url.pathname.startsWith("/rest/"),
     method: "GET" as const,
-    handler: new StaleWhileRevalidate({
+    handler: new NetworkFirst({
       cacheName: "supabase-rest",
       plugins: [
         new ExpirationPlugin({
@@ -144,6 +146,7 @@ const runtimeCaching = [
           maxAgeFrom: "last-used" as const,
         }),
       ],
+      networkTimeoutSeconds: 5,
     }),
   },
 

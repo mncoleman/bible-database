@@ -116,8 +116,8 @@ export default function ChecklistPage() {
         (e) => e.start_verse_id >= chStart && e.end_verse_id <= chEnd
       );
       if (toDelete.length === 0) {
-        toast.error("This chapter was logged as part of a larger range and can't be unchecked here.");
         clearPending();
+        toast.error("This chapter was logged as part of a larger range and can't be unchecked here.");
         return;
       }
       let remaining = toDelete.length;
