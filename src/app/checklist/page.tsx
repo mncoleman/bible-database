@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { Check, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import {
   Accordion,
@@ -32,6 +32,11 @@ export default function ChecklistPage() {
   const books = Bible.getBooks();
   const createEntry = useCreateLogEntry();
   const deleteEntry = useDeleteLogEntry();
+
+  // Track chapters with in-flight mutations to prevent double-taps
+  const [pendingChapters, setPendingChapters] = useState<Set<string>>(
+    () => new Set()
+  );
 
   const ranges: VerseRange[] = entries.map((e) => ({
     startVerseId: e.start_verse_id,
@@ -91,7 +96,18 @@ export default function ChecklistPage() {
     : books;
 
 
-  const handleChapterToggle = (bookIndex: number, chapter: number, isComplete: boolean) => {
+  const handleChapterToggle = useCallback((bookIndex: number, chapter: number, isComplete: boolean) => {
+    const chapterKey = `${bookIndex}-${chapter}`;
+    if (pendingChapters.has(chapterKey)) return;
+
+    setPendingChapters((prev) => new Set(prev).add(chapterKey));
+    const clearPending = () =>
+      setPendingChapters((prev) => {
+        const next = new Set(prev);
+        next.delete(chapterKey);
+        return next;
+      });
+
     if (isComplete) {
       // Uncheck: delete all entries fully contained within this chapter
       const chStart = Bible.makeVerseId(bookIndex, chapter, 1);
@@ -101,11 +117,17 @@ export default function ChecklistPage() {
       );
       if (toDelete.length === 0) {
         toast.error("This chapter was logged as part of a larger range and can't be unchecked here.");
+        clearPending();
         return;
       }
+      let remaining = toDelete.length;
       toDelete.forEach((e) => {
         deleteEntry.mutate(e.id, {
           onError: (error) => toast.error(error.message),
+          onSettled: () => {
+            remaining--;
+            if (remaining <= 0) clearPending();
+          },
         });
       });
     } else {
@@ -117,9 +139,10 @@ export default function ChecklistPage() {
         end_verse_id: Bible.makeVerseId(bookIndex, chapter, lastVerse),
       }, {
         onError: (error) => toast.error(error.message),
+        onSettled: clearPending,
       });
     }
-  };
+  }, [pendingChapters, entries, today, createEntry, deleteEntry]);
 
   if (isLoading) {
     return (
@@ -167,7 +190,7 @@ export default function ChecklistPage() {
             {todayVerseCount} / {dailyGoal} verses ({dailyProgress.toFixed(0)}%)
           </span>
         </div>
-        <Progress value={dailyProgress} />
+        <Progress value={dailyProgress} className="bg-muted" />
       </div>
 
       <Accordion type="multiple" className="w-full">
@@ -218,15 +241,18 @@ export default function ChecklistPage() {
                         );
                       const chapterComplete = chapterRead >= chapterVerses;
                       const chapterPartial = chapterRead > 0 && !chapterComplete;
+                      const isPending = pendingChapters.has(`${book.bibleOrder}-${ch}`);
 
                       return (
                         <button
                           key={ch}
                           type="button"
+                          disabled={isPending}
                           aria-label={`${book.name} chapter ${ch}${chapterComplete ? ", complete" : chapterPartial ? ", partial" : ""}`}
                           onClick={() => handleChapterToggle(book.bibleOrder, ch, chapterComplete)}
                           className={cn(
                             "relative flex items-center justify-center rounded text-xs font-medium border cursor-pointer transition-colors aspect-square",
+                            isPending && "opacity-60 pointer-events-none",
                             chapterComplete &&
                               "bg-primary text-primary-foreground border-primary hover:bg-primary/80",
                             chapterPartial &&
