@@ -96,7 +96,7 @@ export default function TodayPage() {
       overallDiff,
       versesToGetOnTrack,
     };
-  }, [goalEndDate, startDate, remainingVerses, todayVerseCount, dailyGoal, totalReadVerses]);
+  }, [goalEndDate, startDate, remainingVerses, dailyGoal, totalReadVerses]);
 
   const [animatedDaily, setAnimatedDaily] = useState(0);
   const [animatedOverall, setAnimatedOverall] = useState(0);
