@@ -135,10 +135,6 @@
 [data-slot="progress-indicator"] {
   transition-duration: 1500ms;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  background: hsl(217 70% 38%);
-}
-.dark [data-slot="progress-indicator"] {
-  background: hsl(217 65% 45%);
 }
 
 /* Metallic shine sweep across progress bar at 100% */
