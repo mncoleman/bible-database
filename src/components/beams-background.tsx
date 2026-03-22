@@ -15,8 +15,8 @@ export function BeamsBackground() {
   if (!mounted) return null;
 
   const bg = isDark
-    ? "radial-gradient(ellipse 120% 80% at 50% 0%, hsl(150 40% 12%) 0%, hsl(145 30% 6%) 60%, hsl(0 0% 3%) 100%)"
-    : "radial-gradient(ellipse 120% 80% at 50% 0%, hsl(140 30% 90%) 0%, hsl(140 15% 96%) 60%, hsl(0 0% 97%) 100%)";
+    ? "radial-gradient(ellipse 120% 80% at 50% 0%, hsl(220 50% 12%) 0%, hsl(230 30% 6%) 60%, hsl(0 0% 3%) 100%)"
+    : "radial-gradient(ellipse 120% 80% at 50% 0%, hsl(217 30% 90%) 0%, hsl(217 15% 96%) 60%, hsl(0 0% 97%) 100%)";
 
   return (
     <div
