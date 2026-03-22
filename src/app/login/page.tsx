@@ -30,8 +30,12 @@ export default function LoginPage() {
       setError(error.message);
       setLoading(false);
     } else {
-      router.refresh();
-      router.push("/today");
+      try {
+        await router.refresh();
+        router.push("/today");
+      } catch {
+        setLoading(false);
+      }
     }
   };
 
