@@ -96,7 +96,7 @@ export default function TodayPage() {
       overallDiff,
       versesToGetOnTrack,
     };
-  }, [goalEndDate, startDate, remainingVerses, todayVerseCount, dailyGoal, totalReadVerses]);
+  }, [goalEndDate, startDate, remainingVerses, dailyGoal, totalReadVerses]);
 
   const [animatedDaily, setAnimatedDaily] = useState(0);
   const [animatedOverall, setAnimatedOverall] = useState(0);
@@ -239,11 +239,19 @@ export default function TodayPage() {
           <CardContent className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Current daily needed</span>
-              <span className="font-medium">{planStatus.currentDailyNeeded.toLocaleString()} verses</span>
+              <span
+                className="font-medium"
+                style={planStatus.versesToGetOnTrack <= 0 ? { color: "hsl(140 40% 35%)" } : undefined}
+              >
+                {planStatus.currentDailyNeeded.toLocaleString()} verses
+              </span>
             </div>
-<div className="flex justify-between text-sm">
+            <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Read today to be on track</span>
-              <span className="font-medium">
+              <span
+                className="font-medium"
+                style={planStatus.versesToGetOnTrack > 0 ? { color: "hsl(0 60% 35%)" } : undefined}
+              >
                 {planStatus.versesToGetOnTrack <= 0
                   ? `${Math.abs(planStatus.versesToGetOnTrack).toLocaleString()} verses ahead`
                   : `${planStatus.versesToGetOnTrack.toLocaleString()} verses`}

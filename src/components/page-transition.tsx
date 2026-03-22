@@ -6,6 +6,7 @@ import {
   useState,
   useLayoutEffect,
   useCallback,
+  useSyncExternalStore,
 } from "react";
 import { usePathname, useSelectedLayoutSegment } from "next/navigation";
 import { getNavIndex } from "@/lib/nav-order";
@@ -21,24 +22,26 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
   const prevPathRef = useRef(pathname);
   const snapshotRef = useRef({ html: "", height: 0 });
   const swipedRef = useRef(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
+  const reducedMotion = useSyncExternalStore(
+    (cb) => {
+      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      mq.addEventListener("change", cb);
+      return () => mq.removeEventListener("change", cb);
+    },
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    () => false,
+  );
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const openSettings = useCallback(() => setSettingsOpen(true), []);
   useSwipeNavigation(containerRef, openSettings, swipedRef);
 
-  // Close settings sheet on navigation
-  useEffect(() => {
+  // Close settings sheet on navigation (state-during-render pattern)
+  const [prevPathnameForSheet, setPrevPathnameForSheet] = useState(pathname);
+  if (prevPathnameForSheet !== pathname) {
+    setPrevPathnameForSheet(pathname);
     setSettingsOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReducedMotion(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
+  }
 
   // Capture DOM snapshot after every commit (used for click-navigation exit clone)
   useEffect(() => {

@@ -18,7 +18,9 @@ export function useSwipeNavigation(
   const router = useRouter();
   const pathname = usePathname();
   const callbackRef = useRef(onSwipePastEnd);
-  callbackRef.current = onSwipePastEnd;
+  useEffect(() => {
+    callbackRef.current = onSwipePastEnd;
+  });
   const stateRef = useRef<{
     startX: number;
     startY: number;
@@ -179,5 +181,5 @@ export function useSwipeNavigation(
       }
       stateRef.current = null;
     };
-  }, [containerRef, pathname, router]);
+  }, [containerRef, pathname, router, swipedRef]);
 }
