@@ -135,24 +135,24 @@
 [data-slot="progress-indicator"] {
   transition-duration: 1500ms;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  background: hsl(140 40% 35%);
+  background: hsl(217 70% 38%);
 }
 .dark [data-slot="progress-indicator"] {
-  background: hsl(140 45% 42%);
+  background: hsl(217 65% 45%);
 }
 
-/* Glow pulse when progress bar reaches 100% */
+/* Glow pulse when progress bar reaches 100% — applied to container since indicator is clipped by overflow-hidden */
 @keyframes progress-glow {
-  0%, 100% { box-shadow: 0 0 6px 1px hsla(140, 50%, 45%, 0.4), inset 0 0 4px hsla(140, 60%, 70%, 0.15); }
-  50% { box-shadow: 0 0 14px 3px hsla(140, 50%, 45%, 0.6), inset 0 0 8px hsla(140, 60%, 70%, 0.25); }
+  0%, 100% { box-shadow: 0 0 6px 1px hsla(217, 70%, 50%, 0.4); }
+  50% { box-shadow: 0 0 14px 3px hsla(217, 70%, 50%, 0.65); }
 }
-[data-slot="progress-indicator"][data-complete="true"] {
+[data-slot="progress"][data-complete="true"] {
   animation: progress-glow 2s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-slot="progress-indicator"][data-complete="true"] {
+  [data-slot="progress"][data-complete="true"] {
     animation: none;
-    box-shadow: 0 0 8px 2px hsla(140, 50%, 45%, 0.5);
+    box-shadow: 0 0 8px 2px hsla(217, 70%, 50%, 0.5);
   }
 }
 
