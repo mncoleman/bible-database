@@ -162,10 +162,25 @@
   );
   animation: progress-shine 2s ease-in-out infinite;
 }
+.dark [data-slot="progress"][data-complete="true"] [data-slot="progress-indicator"]::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(30, 64, 175, 0.15) 25%,
+    rgba(37, 99, 235, 0.5) 45%,
+    rgba(59, 130, 246, 0.65) 50%,
+    rgba(37, 99, 235, 0.5) 55%,
+    rgba(30, 64, 175, 0.15) 75%,
+    transparent 100%
+  );
+}
 @media (prefers-reduced-motion: reduce) {
   [data-slot="progress"][data-complete="true"] [data-slot="progress-indicator"]::after {
     animation: none;
     background: rgba(255, 255, 255, 0.12);
+  }
+  .dark [data-slot="progress"][data-complete="true"] [data-slot="progress-indicator"]::after {
+    background: rgba(37, 99, 235, 0.2);
   }
 }
 
