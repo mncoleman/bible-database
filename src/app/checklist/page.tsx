@@ -222,11 +222,11 @@ export default function ChecklistPage() {
       <div
         ref={stickyRef}
         className="sticky top-14 z-10 py-3 -mx-1 px-1 space-y-2 rounded-lg transition-colors duration-200"
-        style={isScrolled ? {
+        style={{
           background: 'var(--glass-bg)',
           backdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
           WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
-        } : undefined}
+        }}
       >
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Daily Goal</span>
