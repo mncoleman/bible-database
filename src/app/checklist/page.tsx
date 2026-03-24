@@ -221,12 +221,7 @@ export default function ChecklistPage() {
       {/* Daily Goal — sticky */}
       <div
         ref={stickyRef}
-        className="sticky top-14 z-10 py-3 -mx-1 px-1 space-y-2 rounded-lg transition-colors duration-200"
-        style={{
-          background: 'var(--glass-bg)',
-          backdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
-          WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
-        }}
+        className="sticky top-14 z-10 py-3 -mx-1 px-1 space-y-2 rounded-lg bg-background"
       >
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Daily Goal</span>
@@ -313,10 +308,8 @@ export default function ChecklistPage() {
                         >
                           {hasCatchup && (
                             <span
-                              className="absolute inset-0 bg-blue-500/25 dark:bg-blue-400/30"
-                              style={catchupFraction < 1 ? {
-                                clipPath: `polygon(0 0, ${catchupFraction * 100}% 0, ${catchupFraction * 100}% 100%, 0 100%)`,
-                              } : undefined}
+                              className="absolute top-0 left-0 h-full bg-blue-500/25 dark:bg-blue-400/30"
+                              style={{ width: `${catchupFraction * 100}%` }}
                             />
                           )}
                           <span className="relative">{ch}</span>
