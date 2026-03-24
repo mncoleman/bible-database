@@ -315,7 +315,7 @@ export default function ChecklistPage() {
                             <span
                               className="absolute inset-0 bg-blue-500/25 dark:bg-blue-400/30"
                               style={catchupFraction < 1 ? {
-                                clipPath: `inset(0 ${(1 - catchupFraction) * 100}% 0 0)`,
+                                clipPath: `inset(${(1 - catchupFraction) * 100}% 0 0 0)`,
                               } : undefined}
                             />
                           )}
