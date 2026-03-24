@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { differenceInDays, parseISO } from "date-fns";
 import { Check, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import {
@@ -53,25 +53,6 @@ export default function ChecklistPage() {
   const dailyProgress = Math.min((todayVerseCount / dailyGoal) * 100, 100);
 
   const [compact, setCompact] = useState(true);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const stickyRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = stickyRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsScrolled(!entry.isIntersecting),
-      { threshold: 1, rootMargin: "-57px 0px 0px 0px" }
-    );
-    // Observe a zero-height sentinel right above the sticky element
-    const sentinel = document.createElement("div");
-    el.parentElement?.insertBefore(sentinel, el);
-    observer.observe(sentinel);
-    return () => {
-      observer.disconnect();
-      sentinel.remove();
-    };
-  }, []);
 
   // Track reveal transition: when toggling from compact→reveal, we note
   // which books are "newly appearing" so we can fade them in via CSS.
@@ -220,7 +201,6 @@ export default function ChecklistPage() {
 
       {/* Daily Goal — sticky */}
       <div
-        ref={stickyRef}
         className="sticky top-14 z-10 py-3 -mx-1 px-1 space-y-2 rounded-lg bg-background"
       >
         <div className="flex justify-between text-sm">
