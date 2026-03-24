@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { differenceInDays, parseISO } from "date-fns";
 import { Check, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import {
   Accordion,
@@ -90,6 +91,49 @@ export default function ChecklistPage() {
     }
     return ids;
   }, [books, ranges]);
+
+  // Catch-up indicator: how many verses behind the reading plan
+  const catchupMap = useMemo(() => {
+    const map = new Map<string, number>(); // "bookIndex-chapter" → fraction 0–1
+    const goalEndDate = settings?.goal_end_date ?? null;
+    if (!goalEndDate) return map;
+
+    const daysRemaining = Math.max(0, differenceInDays(parseISO(goalEndDate), new Date()));
+    if (daysRemaining === 0) return map;
+
+    const totalReadVerses = Bible.countUniqueRangeVerses(ranges);
+    const totalVerses = Bible.getTotalVerseCount();
+    const remainingVerses = totalVerses - totalReadVerses;
+    const versesToGetOnTrack = remainingVerses - dailyGoal * daysRemaining;
+
+    if (versesToGetOnTrack <= 0) return map; // on track or ahead
+
+    let versesLeft = versesToGetOnTrack;
+    const bookCount = Bible.getBookCount();
+
+    for (let bookIdx = 1; bookIdx <= bookCount && versesLeft > 0; bookIdx++) {
+      const chapterCount = Bible.getBookChapterCount(bookIdx);
+      for (let ch = 1; ch <= chapterCount && versesLeft > 0; ch++) {
+        const totalChVerses = Bible.getChapterVerseCount(bookIdx, ch);
+        const readChVerses = Bible.countUniqueBookChapterRangeVerses(bookIdx, ch, ranges);
+        const unreadChVerses = totalChVerses - readChVerses;
+
+        if (unreadChVerses <= 0) continue; // fully read
+
+        if (versesLeft >= unreadChVerses) {
+          // Entire unread portion is part of catch-up
+          map.set(`${bookIdx}-${ch}`, unreadChVerses / totalChVerses);
+          versesLeft -= unreadChVerses;
+        } else {
+          // Partial catch-up
+          map.set(`${bookIdx}-${ch}`, versesLeft / totalChVerses);
+          versesLeft = 0;
+        }
+      }
+    }
+
+    return map;
+  }, [ranges, settings?.goal_end_date, dailyGoal]);
 
   const visibleBooks = compact
     ? books.filter((b) => !completedBookIds.has(String(b.bibleOrder)))
@@ -242,27 +286,40 @@ export default function ChecklistPage() {
                       const chapterComplete = chapterRead >= chapterVerses;
                       const chapterPartial = chapterRead > 0 && !chapterComplete;
                       const isPending = pendingChapters.has(`${book.bibleOrder}-${ch}`);
+                      const catchupFraction = catchupMap.get(`${book.bibleOrder}-${ch}`) ?? 0;
+                      const hasCatchup = catchupFraction > 0 && !chapterComplete;
 
                       return (
                         <button
                           key={ch}
                           type="button"
                           disabled={isPending}
-                          aria-label={`${book.name} chapter ${ch}${chapterComplete ? ", complete" : chapterPartial ? ", partial" : ""}`}
+                          aria-label={`${book.name} chapter ${ch}${chapterComplete ? ", complete" : chapterPartial ? ", partial" : ""}${hasCatchup ? `, ${Math.round(catchupFraction * 100)}% catch-up` : ""}`}
                           onClick={() => handleChapterToggle(book.bibleOrder, ch, chapterComplete)}
                           className={cn(
-                            "relative flex items-center justify-center rounded text-xs font-medium border cursor-pointer transition-colors aspect-square",
+                            "relative flex items-center justify-center rounded text-xs font-medium border cursor-pointer transition-colors aspect-square overflow-hidden",
                             isPending && "opacity-60 pointer-events-none",
                             chapterComplete &&
                               "bg-primary text-primary-foreground border-primary hover:bg-primary/80",
-                            chapterPartial &&
+                            chapterPartial && !hasCatchup &&
                               "bg-primary/20 border-primary/50 hover:bg-primary/30",
+                            hasCatchup &&
+                              "border-blue-500/50",
                             !chapterComplete &&
                               !chapterPartial &&
+                              !hasCatchup &&
                               "bg-muted border-border hover:bg-accent"
                           )}
                         >
-                          {ch}
+                          {hasCatchup && (
+                            <span
+                              className="absolute inset-0 bg-blue-500/25 dark:bg-blue-400/30"
+                              style={catchupFraction < 1 ? {
+                                clipPath: `inset(${(1 - catchupFraction) * 100}% 0 0 0)`,
+                              } : undefined}
+                            />
+                          )}
+                          <span className="relative">{ch}</span>
                           {chapterComplete && (
                             <Check className="absolute top-0.5 right-0.5 h-2.5 w-2.5" />
                           )}
