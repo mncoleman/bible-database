@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getAuthenticatedUser } from "@/lib/supabase/client";
 import type { UserSettings } from "@/lib/supabase/types";
 
 const QUERY_KEY = "user-settings";
@@ -32,10 +32,7 @@ export function useUpdateUserSettings() {
         Omit<UserSettings, "id" | "user_id" | "created_at" | "updated_at">
       >
     ) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      const user = await getAuthenticatedUser();
 
       // Try update first, then upsert if no row exists
       const { data: existing } = await supabase

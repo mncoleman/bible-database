@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getAuthenticatedUser } from "@/lib/supabase/client";
 import type { LogEntry } from "@/lib/supabase/types";
 
 const QUERY_KEY = "log-entries";
@@ -59,10 +59,7 @@ export function useCreateLogEntry() {
       start_verse_id: number;
       end_verse_id: number;
     }) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      const user = await getAuthenticatedUser();
 
       const { data, error } = await supabase
         .from("log_entries")
@@ -128,10 +125,7 @@ export function useUpdateLogEntry() {
       start_verse_id?: number;
       end_verse_id?: number;
     }) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      const user = await getAuthenticatedUser();
 
       const { data, error } = await supabase
         .from("log_entries")
@@ -192,10 +186,7 @@ export function useBulkCreateLogEntries() {
     mutationFn: async (
       entries: { date: string; start_verse_id: number; end_verse_id: number }[]
     ) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      const user = await getAuthenticatedUser();
 
       const rows = entries.map((e) => ({ ...e, user_id: user.id }));
       // Insert in batches of 500 to avoid payload limits
@@ -221,10 +212,7 @@ export function useDeleteLogEntry() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      const user = await getAuthenticatedUser();
 
       const { error } = await supabase
         .from("log_entries")
