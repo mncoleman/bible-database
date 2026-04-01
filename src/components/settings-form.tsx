@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { format, addDays } from "date-fns";
+import { format, addDays, differenceInDays, parseISO } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,15 @@ export function SettingsForm({ settings }: { settings: NonNullable<ReturnType<ty
   const [bibleApp, setBibleApp] = useState(settings.preferred_bible_app);
   const [lookBackDate, setLookBackDate] = useState(settings.look_back_date || "");
   const [goalEndDate, setGoalEndDate] = useState(settings.goal_end_date || "");
+
+  const TOTAL_VERSES = 31102;
+
+  const computeDailyGoal = useCallback((startDate: string, endDate: string) => {
+    if (!startDate || !endDate) return null;
+    const days = differenceInDays(parseISO(endDate), parseISO(startDate));
+    if (days <= 0) return null;
+    return Math.ceil(TOTAL_VERSES / days);
+  }, []);
 
   const [primaryLight, setPrimaryLight] = useState(settings.primary_light || "0 0% 9%");
   const [accentLight, setAccentLight] = useState(settings.accent_light || "0 0% 96.1%");
@@ -141,15 +150,24 @@ export function SettingsForm({ settings }: { settings: NonNullable<ReturnType<ty
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="lookBackDate">Start date</Label>
-                <Input
-                  id="lookBackDate"
-                  type="date"
-                  value={lookBackDate}
-                  onChange={(e) => {
-                    setLookBackDate(e.target.value);
-                    autosave({ look_back_date: e.target.value || null });
-                  }}
-                />
+                <div className="px-1">
+                  <Input
+                    id="lookBackDate"
+                    type="date"
+                    value={lookBackDate}
+                    onChange={(e) => {
+                      const newDate = e.target.value;
+                      setLookBackDate(newDate);
+                      const computed = computeDailyGoal(newDate, goalEndDate);
+                      if (computed) {
+                        setDailyGoal(computed);
+                        autosave({ look_back_date: newDate || null, daily_verse_count_goal: computed });
+                      } else {
+                        autosave({ look_back_date: newDate || null });
+                      }
+                    }}
+                  />
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Entries before this date are excluded from progress calculations.
                 </p>
@@ -169,16 +187,25 @@ export function SettingsForm({ settings }: { settings: NonNullable<ReturnType<ty
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="goalEndDate">End date</Label>
-                <Input
-                  id="goalEndDate"
-                  type="date"
-                  value={goalEndDate}
-                  min={format(addDays(new Date(), 1), "yyyy-MM-dd")}
-                  onChange={(e) => {
-                    setGoalEndDate(e.target.value);
-                    autosave({ goal_end_date: e.target.value || null });
-                  }}
-                />
+                <div className="px-1">
+                  <Input
+                    id="goalEndDate"
+                    type="date"
+                    value={goalEndDate}
+                    min={format(addDays(new Date(), 1), "yyyy-MM-dd")}
+                    onChange={(e) => {
+                      const newDate = e.target.value;
+                      setGoalEndDate(newDate);
+                      const computed = computeDailyGoal(lookBackDate, newDate);
+                      if (computed) {
+                        setDailyGoal(computed);
+                        autosave({ goal_end_date: newDate || null, daily_verse_count_goal: computed });
+                      } else {
+                        autosave({ goal_end_date: newDate || null });
+                      }
+                    }}
+                  />
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Your daily verse requirement is calculated from your plan dates.
                 </p>
