@@ -297,17 +297,33 @@ const serwist = new Serwist({
   runtimeCaching,
 });
 
-// Warm-cache the app shell on activation so the 3 primary pages load instantly
+// Warm-cache the app shell on activation so the 3 primary pages load instantly.
+//
+// CRITICAL: we MUST NOT use cache.add() here. cache.add fetches with the
+// default redirect: "follow" mode, and cache.put accepts followed redirects.
+// If the SW activates while the user is unauthenticated (very common for a
+// freshly-installed PWA opened from the Home Screen), the auth proxy
+// redirects /today -> /login and cache.add would happily store the /login
+// HTML keyed under /today. The user then signs in, navigates to /today,
+// and gets the cached /login HTML back — an infinite sign-in redirect loop.
+//
+// Instead, fetch manually and only cache the response if it is a real 2xx
+// response that was NOT followed from a redirect.
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(PAGES_CACHE_NAME.html);
       await Promise.allSettled(
-        APP_SHELL_URLS.map((url) =>
-          cache.add(url).catch(() => {
+        APP_SHELL_URLS.map(async (url) => {
+          try {
+            const response = await fetch(url, { redirect: "follow" });
+            if (response.ok && !response.redirected) {
+              await cache.put(url, response);
+            }
+          } catch {
             // Silently ignore — page will be cached on first visit instead
-          })
-        )
+          }
+        })
       );
     })()
   );
