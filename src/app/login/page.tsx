@@ -28,6 +28,14 @@ export default function LoginPage() {
       setError(error.message);
       setLoading(false);
     } else {
+      // Drop any navigation/page caches the service worker populated while
+      // the user was unauthenticated — otherwise a cached /login response
+      // keyed under /today can send the signed-in user straight back here.
+      if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: "CLEAR_PAGE_CACHES",
+        });
+      }
       // Hard navigation ensures browser sends the freshly-set auth cookies
       window.location.href = "/today";
     }
