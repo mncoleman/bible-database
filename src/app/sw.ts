@@ -9,6 +9,18 @@ import {
   StaleWhileRevalidate,
 } from "serwist";
 
+// Never cache responses that were followed from a redirect (e.g. the auth
+// proxy redirecting a protected page like /today to /login). Without this,
+// the StaleWhileRevalidate caches on navigations would store the /login HTML
+// under the /today key, permanently sending signed-in users back to /login.
+const skipRedirectedPlugin = {
+  cacheWillUpdate: async ({ response }: { response: Response }) => {
+    if (!response || response.redirected) return null;
+    if (response.status < 200 || response.status >= 300) return null;
+    return response;
+  },
+};
+
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
     __SW_MANIFEST: (PrecacheEntry | string)[] | undefined;
@@ -193,6 +205,7 @@ const runtimeCaching = [
     handler: new StaleWhileRevalidate({
       cacheName: PAGES_CACHE_NAME.rscPrefetch,
       plugins: [
+        skipRedirectedPlugin,
         new ExpirationPlugin({
           maxEntries: 32,
           maxAgeSeconds: 24 * 60 * 60,
@@ -207,6 +220,7 @@ const runtimeCaching = [
     handler: new StaleWhileRevalidate({
       cacheName: PAGES_CACHE_NAME.rsc,
       plugins: [
+        skipRedirectedPlugin,
         new ExpirationPlugin({
           maxEntries: 32,
           maxAgeSeconds: 24 * 60 * 60,
@@ -214,15 +228,19 @@ const runtimeCaching = [
       ],
     }),
   },
-  // HTML pages
+  // HTML page navigations — use request.destination which is reliably set on
+  // navigation requests (Accept header is also fine; Content-Type is NOT set
+  // on GET navigations so the previous check never matched).
   {
     matcher: ({ request, url: { pathname }, sameOrigin }: { request: Request; url: URL; sameOrigin: boolean }) =>
-      request.headers.get("Content-Type")?.includes("text/html") &&
+      request.destination === "document" &&
       sameOrigin &&
       !pathname.startsWith("/api/"),
-    handler: new StaleWhileRevalidate({
+    handler: new NetworkFirst({
       cacheName: PAGES_CACHE_NAME.html,
+      networkTimeoutSeconds: 5,
       plugins: [
+        skipRedirectedPlugin,
         new ExpirationPlugin({
           maxEntries: 32,
           maxAgeSeconds: 24 * 60 * 60,
@@ -238,6 +256,7 @@ const runtimeCaching = [
     handler: new StaleWhileRevalidate({
       cacheName: "others",
       plugins: [
+        skipRedirectedPlugin,
         new ExpirationPlugin({
           maxEntries: 32,
           maxAgeSeconds: 24 * 60 * 60,
@@ -298,6 +317,18 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("message", (event) => {
   if (event.data?.type === "CLEAR_AUTH_CACHE") {
     caches.delete("supabase-rest");
+  }
+  // Called on successful sign-in to drop any navigation/page caches that
+  // were populated while the user was unauthenticated. Without this, a
+  // pre-signin cache entry for a protected page could serve the /login
+  // HTML back to the now-authenticated user, creating a redirect loop.
+  if (event.data?.type === "CLEAR_PAGE_CACHES") {
+    Promise.all([
+      caches.delete("others"),
+      caches.delete(PAGES_CACHE_NAME.html),
+      caches.delete(PAGES_CACHE_NAME.rsc),
+      caches.delete(PAGES_CACHE_NAME.rscPrefetch),
+    ]);
   }
 });
 
