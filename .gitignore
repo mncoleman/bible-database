@@ -44,3 +44,6 @@ next-env.d.ts
 public/sw*
 public/swe-worker*
 
+# supabase cli state
+supabase/.temp/
+

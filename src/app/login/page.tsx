@@ -1,17 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TelegramLoginButton } from "@/components/telegram-login-button";
+import type { TelegramAuthData } from "@/lib/telegram";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [telegramStatus, setTelegramStatus] = useState("");
+
+  const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? "";
+
+  const clearPageCaches = () => {
+    if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: "CLEAR_PAGE_CACHES" });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,27 +30,45 @@ export default function LoginPage() {
     setLoading(true);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       setError(error.message);
       setLoading(false);
     } else {
-      // Drop any navigation/page caches the service worker populated while
-      // the user was unauthenticated — otherwise a cached /login response
-      // keyed under /today can send the signed-in user straight back here.
-      if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-          type: "CLEAR_PAGE_CACHES",
-        });
-      }
-      // Hard navigation ensures browser sends the freshly-set auth cookies
+      clearPageCaches();
       window.location.href = "/today";
     }
   };
+
+  const handleTelegramAuth = useCallback(async (data: TelegramAuthData) => {
+    setError("");
+    setTelegramStatus("Signing in with Telegram...");
+    try {
+      const res = await fetch("/api/auth/telegram/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        if (json?.error === "not_linked") {
+          setError(
+            "This Telegram account isn't linked to any user. Sign in with email first, then link Telegram from Settings."
+          );
+        } else {
+          setError("Telegram sign-in failed. Please try again.");
+        }
+        setTelegramStatus("");
+        return;
+      }
+      clearPageCaches();
+      window.location.href = json.redirect;
+    } catch {
+      setError("Telegram sign-in failed. Please try again.");
+      setTelegramStatus("");
+    }
+  }, []);
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center">
@@ -69,13 +98,31 @@ export default function LoginPage() {
                 required
               />
             </div>
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
+            {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
+
+          {botUsername && (
+            <div className="mt-6 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex-1 border-t" />
+                <span className="text-xs text-muted-foreground">or</span>
+                <div className="flex-1 border-t" />
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <TelegramLoginButton
+                  botUsername={botUsername}
+                  onAuth={handleTelegramAuth}
+                  cornerRadius={8}
+                />
+                {telegramStatus && (
+                  <p className="text-xs text-muted-foreground">{telegramStatus}</p>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -39,6 +39,17 @@ export type UserSettings = {
   updated_at: string;
 };
 
+export type TelegramIdentity = {
+  id: string;
+  user_id: string;
+  telegram_id: number;
+  telegram_username: string | null;
+  first_name: string;
+  last_name: string | null;
+  photo_url: string | null;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -53,6 +64,11 @@ export type Database = {
         Update: Partial<
           Omit<UserSettings, "id" | "created_at" | "updated_at">
         >;
+      };
+      telegram_identities: {
+        Row: TelegramIdentity;
+        Insert: Omit<TelegramIdentity, "id" | "created_at">;
+        Update: Partial<Omit<TelegramIdentity, "id" | "created_at">>;
       };
     };
   };
