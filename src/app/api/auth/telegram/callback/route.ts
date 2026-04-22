@@ -57,11 +57,12 @@ export async function GET(request: Request) {
   const admin = createAdminClient();
 
   // ---- LINK MODE ----
-  // User is already signed in; attach this Telegram identity to their account.
+  // User id was resolved and baked into the signed state at /start time. We
+  // don't re-read Supabase cookies here because they aren't reliably present
+  // on the cross-site return from oauth.telegram.org.
   if (oauthData.link) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return fail(origin, "unauthenticated");
+    const userId = oauthData.linkUserId;
+    if (!userId) return fail(origin, "unauthenticated");
 
     const { data: existing } = await admin
       .from("telegram_identities")
@@ -69,7 +70,7 @@ export async function GET(request: Request) {
       .eq("telegram_id", telegramId)
       .maybeSingle();
 
-    if (existing && existing.user_id !== user.id) {
+    if (existing && existing.user_id !== userId) {
       return NextResponse.redirect(
         `${origin}/settings?error=telegram_already_linked_to_other_account`
       );
@@ -79,7 +80,7 @@ export async function GET(request: Request) {
       .from("telegram_identities")
       .upsert(
         {
-          user_id: user.id,
+          user_id: userId,
           telegram_id: telegramId,
           telegram_username: payload.username ?? null,
           first_name: payload.first_name ?? "",

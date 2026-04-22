@@ -44,6 +44,13 @@ export type OauthStateData = {
   codeVerifier: string;
   state: string;
   link?: boolean;
+  /**
+   * Baked into the state JWT at /start time when link=1. The callback trusts
+   * this instead of re-reading Supabase cookies — those don't always survive
+   * the cross-site OAuth return, so relying on them was causing link flows
+   * to fail out to the login page.
+   */
+  linkUserId?: string;
   next?: string;
 };
 
@@ -54,6 +61,7 @@ export async function signOauthState(data: OauthStateData): Promise<string> {
     state: data.state,
   };
   if (data.link) payload.link = true;
+  if (data.linkUserId) payload.linkUserId = data.linkUserId;
   if (data.next) payload.next = data.next;
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
@@ -69,6 +77,7 @@ export async function verifyOauthState(token: string): Promise<OauthStateData | 
       codeVerifier: String(payload.codeVerifier ?? ""),
       state: String(payload.state ?? ""),
       link: payload.link === true ? true : undefined,
+      linkUserId: typeof payload.linkUserId === "string" ? payload.linkUserId : undefined,
       next: typeof payload.next === "string" ? payload.next : undefined,
     };
   } catch {

@@ -18,6 +18,8 @@ const ERRORS: Record<string, string> = {
     "This Telegram account isn't linked to any user. Sign in with email first, then link Telegram in Settings.",
   session_mint_failed: "Could not start your session. Please try again.",
   user_not_found: "Linked user not found. Please contact support.",
+  unauthenticated: "Please sign in first, then link Telegram from Settings.",
+  link_failed: "Linking your Telegram account failed. Please try again.",
 };
 
 function LoginInner() {
