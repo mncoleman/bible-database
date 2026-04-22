@@ -31,13 +31,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Download } from "lucide-react";
-import { TelegramLoginButton } from "@/components/telegram-login-button";
 import {
   useTelegramIdentity,
-  useLinkTelegram,
   useUnlinkTelegram,
 } from "@/hooks/use-telegram-identity";
-import type { TelegramAuthData } from "@/lib/telegram";
 
 export function SettingsForm({ settings }: { settings: NonNullable<ReturnType<typeof useUserSettings>["data"]> }) {
   const { data: logEntries = [] } = useLogEntries();
@@ -59,27 +56,8 @@ export function SettingsForm({ settings }: { settings: NonNullable<ReturnType<ty
     return Math.ceil(TOTAL_VERSES / days);
   }, []);
 
-  const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? "";
   const { data: telegramIdentity, isLoading: telegramLoading } = useTelegramIdentity();
-  const linkTelegram = useLinkTelegram();
   const unlinkTelegram = useUnlinkTelegram();
-
-  const handleTelegramLink = useCallback(
-    async (data: TelegramAuthData) => {
-      try {
-        await linkTelegram.mutateAsync(data);
-        toast.success("Telegram account linked");
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "link_failed";
-        if (msg === "already_linked_to_other_account") {
-          toast.error("That Telegram account is already linked to another user.");
-        } else {
-          toast.error("Failed to link Telegram account");
-        }
-      }
-    },
-    [linkTelegram]
-  );
 
   const handleTelegramUnlink = async () => {
     try {
@@ -451,48 +429,46 @@ export function SettingsForm({ settings }: { settings: NonNullable<ReturnType<ty
             </CardContent>
           </Card>
 
-          {botUsername && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Telegram</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {telegramLoading ? (
-                  <p className="text-sm text-muted-foreground">Loading...</p>
-                ) : telegramIdentity ? (
-                  <>
-                    <p className="text-sm text-muted-foreground">
-                      Linked as{" "}
-                      <span className="text-foreground font-medium">
-                        {telegramIdentity.telegram_username
-                          ? `@${telegramIdentity.telegram_username}`
-                          : telegramIdentity.first_name}
-                      </span>
-                      . You can sign in with Telegram from the login screen.
-                    </p>
-                    <Button
-                      variant="outline"
-                      onClick={handleTelegramUnlink}
-                      disabled={unlinkTelegram.isPending}
-                    >
-                      {unlinkTelegram.isPending ? "Unlinking..." : "Unlink Telegram"}
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm text-muted-foreground">
-                      Link your Telegram account to sign in with one tap.
-                    </p>
-                    <TelegramLoginButton
-                      botUsername={botUsername}
-                      onAuth={handleTelegramLink}
-                      cornerRadius={8}
-                    />
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Telegram</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {telegramLoading ? (
+                <p className="text-sm text-muted-foreground">Loading...</p>
+              ) : telegramIdentity ? (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Linked as{" "}
+                    <span className="text-foreground font-medium">
+                      {telegramIdentity.telegram_username
+                        ? `@${telegramIdentity.telegram_username}`
+                        : telegramIdentity.first_name}
+                    </span>
+                    . You can sign in with Telegram from the login screen.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={handleTelegramUnlink}
+                    disabled={unlinkTelegram.isPending}
+                  >
+                    {unlinkTelegram.isPending ? "Unlinking..." : "Unlink Telegram"}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Link your Telegram account to sign in with one tap.
+                  </p>
+                  <Button variant="outline" asChild>
+                    <Link href="/api/auth/telegram/start?link=1&next=/settings">
+                      Link Telegram
+                    </Link>
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>

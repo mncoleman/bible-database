@@ -3,7 +3,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { TelegramIdentity } from "@/lib/supabase/types";
-import type { TelegramAuthData } from "@/lib/telegram";
 
 const QUERY_KEY = "telegram-identity";
 
@@ -19,26 +18,6 @@ export function useTelegramIdentity() {
         .maybeSingle();
       if (error) throw error;
       return data as TelegramIdentity | null;
-    },
-  });
-}
-
-export function useLinkTelegram() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (authData: TelegramAuthData) => {
-      const res = await fetch("/api/auth/telegram/link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(authData),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || "link_failed");
-      return json;
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
     },
   });
 }
