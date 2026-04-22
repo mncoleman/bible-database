@@ -461,9 +461,9 @@ export function SettingsForm({ settings }: { settings: NonNullable<ReturnType<ty
                     Link your Telegram account to sign in with one tap.
                   </p>
                   <Button variant="outline" asChild>
-                    <Link href="/api/auth/telegram/start?link=1&next=/settings">
+                    <a href="/api/auth/telegram/start?link=1&next=/settings" rel="nofollow">
                       Link Telegram
-                    </Link>
+                    </a>
                   </Button>
                 </>
               )}
