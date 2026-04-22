@@ -90,7 +90,17 @@ export async function GET(request: Request) {
         { onConflict: "user_id" }
       );
 
-    if (upsertError) return fail(origin, "link_failed");
+    if (upsertError) {
+      console.error("[telegram-link] upsert failed", {
+        userId,
+        telegramId,
+        code: upsertError.code,
+        message: upsertError.message,
+        details: upsertError.details,
+        hint: upsertError.hint,
+      });
+      return fail(origin, "link_failed");
+    }
 
     return NextResponse.redirect(`${origin}${oauthData.next ?? "/settings"}`);
   }
