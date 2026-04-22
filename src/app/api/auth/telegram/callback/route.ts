@@ -51,8 +51,10 @@ export async function GET(request: Request) {
   const payload = await verifyTelegramIdToken(tokens.id_token);
   if (!payload) return fail(origin, "invalid_id_token");
 
-  const telegramId = Number(payload.sub);
-  if (!Number.isFinite(telegramId)) return fail(origin, "invalid_id_token");
+  // Treat sub as an opaque string — Telegram subs can exceed JS safe integer
+  // and even Postgres bigint ranges, so don't coerce to number.
+  const telegramId = typeof payload.sub === "string" ? payload.sub : String(payload.sub ?? "");
+  if (!telegramId) return fail(origin, "invalid_id_token");
 
   const admin = createAdminClient();
 
