@@ -42,7 +42,7 @@ export type UserSettings = {
 export type TelegramIdentity = {
   id: string;
   user_id: string;
-  telegram_id: number;
+  telegram_id: string;
   telegram_username: string | null;
   first_name: string;
   last_name: string | null;

@@ -6,7 +6,7 @@
 create table public.telegram_identities (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null unique,
-  telegram_id bigint not null unique,
+  telegram_id text not null unique,
   telegram_username text,
   first_name text,
   last_name text,
