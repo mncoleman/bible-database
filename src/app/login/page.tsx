@@ -1,14 +1,12 @@
 "use client";
 
-import { useState, useCallback, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TelegramLoginButton } from "@/components/telegram-login-button";
-import type { TelegramAuthData } from "@/lib/telegram";
 
 const ERRORS: Record<string, string> = {
   missing_params: "Sign-in was interrupted. Please try again.",
@@ -31,9 +29,6 @@ function LoginInner() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(initialError ?? "");
   const [loading, setLoading] = useState(false);
-  const [telegramStatus, setTelegramStatus] = useState("");
-
-  const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? "";
 
   const clearPageCaches = () => {
     if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
@@ -57,33 +52,6 @@ function LoginInner() {
       window.location.href = "/today";
     }
   };
-
-  const handleTelegramWidgetAuth = useCallback(async (data: TelegramAuthData) => {
-    setError("");
-    setTelegramStatus("Signing in with Telegram...");
-    try {
-      const res = await fetch("/api/auth/telegram/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        if (json?.error === "not_linked") {
-          setError(ERRORS.telegram_not_linked);
-        } else {
-          setError("Telegram sign-in failed. Please try again.");
-        }
-        setTelegramStatus("");
-        return;
-      }
-      clearPageCaches();
-      window.location.href = json.redirect;
-    } catch {
-      setError("Telegram sign-in failed. Please try again.");
-      setTelegramStatus("");
-    }
-  }, []);
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center">
@@ -119,7 +87,7 @@ function LoginInner() {
             </Button>
           </form>
 
-          <div className="mt-6 space-y-4">
+          <div className="mt-6 space-y-3">
             <div className="flex items-center gap-3">
               <div className="flex-1 border-t" />
               <span className="text-xs text-muted-foreground">or</span>
@@ -131,20 +99,6 @@ function LoginInner() {
                 Continue with Telegram
               </a>
             </Button>
-
-            {botUsername && (
-              <div className="flex flex-col items-center gap-2">
-                <TelegramLoginButton
-                  botUsername={botUsername}
-                  onAuth={handleTelegramWidgetAuth}
-                  cornerRadius={8}
-                  size="medium"
-                />
-                {telegramStatus && (
-                  <p className="text-xs text-muted-foreground">{telegramStatus}</p>
-                )}
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
