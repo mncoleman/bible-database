@@ -1,23 +1,39 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TelegramLoginButton } from "@/components/telegram-login-button";
+import type { TelegramAuthData } from "@/lib/telegram";
 
-type TelegramFlowState = "idle" | "waiting" | "verifying";
+const ERRORS: Record<string, string> = {
+  missing_params: "Sign-in was interrupted. Please try again.",
+  expired_state: "Sign-in session expired. Please try again.",
+  invalid_state: "Invalid sign-in state. Please try again.",
+  token_exchange_failed: "Telegram sign-in failed. Please try again.",
+  invalid_id_token: "Telegram returned an invalid token. Please try again.",
+  telegram_not_linked:
+    "This Telegram account isn't linked to any user. Sign in with email first, then link Telegram in Settings.",
+  session_mint_failed: "Could not start your session. Please try again.",
+  user_not_found: "Linked user not found. Please contact support.",
+};
 
-export default function LoginPage() {
+function LoginInner() {
+  const searchParams = useSearchParams();
+  const urlError = searchParams.get("error");
+  const initialError = urlError ? ERRORS[urlError] ?? null : null;
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(initialError ?? "");
   const [loading, setLoading] = useState(false);
-  const [tgState, setTgState] = useState<TelegramFlowState>("idle");
+  const [telegramStatus, setTelegramStatus] = useState("");
 
   const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? "";
-  const cancelledRef = useRef(false);
 
   const clearPageCaches = () => {
     if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
@@ -42,93 +58,31 @@ export default function LoginPage() {
     }
   };
 
-  const startTelegramLogin = useCallback(async () => {
+  const handleTelegramWidgetAuth = useCallback(async (data: TelegramAuthData) => {
     setError("");
-    cancelledRef.current = false;
-
-    let nonce: string;
-    let deeplink: string;
+    setTelegramStatus("Signing in with Telegram...");
     try {
-      const res = await fetch("/api/auth/telegram/nonce", { method: "POST" });
+      const res = await fetch("/api/auth/telegram/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
       const json = await res.json();
-      if (!res.ok || !json?.nonce) {
-        setError("Could not start Telegram sign-in. Please try again.");
+      if (!res.ok) {
+        if (json?.error === "not_linked") {
+          setError(ERRORS.telegram_not_linked);
+        } else {
+          setError("Telegram sign-in failed. Please try again.");
+        }
+        setTelegramStatus("");
         return;
       }
-      nonce = json.nonce;
-      deeplink = json.deeplink;
+      clearPageCaches();
+      window.location.href = json.redirect;
     } catch {
-      setError("Could not start Telegram sign-in. Please try again.");
-      return;
+      setError("Telegram sign-in failed. Please try again.");
+      setTelegramStatus("");
     }
-
-    setTgState("waiting");
-
-    // Opening in a new tab/window keeps the current page alive so the poll
-    // loop can run; on iOS this hands off to the Telegram app while our page
-    // stays in the PWA.
-    window.open(deeplink, "_blank", "noopener,noreferrer");
-
-    const deadline = Date.now() + 5 * 60 * 1000;
-    const poll = async (): Promise<void> => {
-      while (!cancelledRef.current && Date.now() < deadline) {
-        await new Promise((r) => setTimeout(r, 2000));
-        if (cancelledRef.current) return;
-
-        let statusJson: { status: string; token_hash?: string } | null = null;
-        try {
-          const res = await fetch(
-            `/api/auth/telegram/nonce/${encodeURIComponent(nonce)}/status`,
-            { cache: "no-store" }
-          );
-          statusJson = await res.json();
-        } catch {
-          continue;
-        }
-        if (!statusJson) continue;
-
-        if (statusJson.status === "confirmed" && statusJson.token_hash) {
-          setTgState("verifying");
-          const supabase = createClient();
-          const { error: verifyError } = await supabase.auth.verifyOtp({
-            token_hash: statusJson.token_hash,
-            type: "magiclink",
-          });
-          if (verifyError) {
-            setError("Sign-in failed after Telegram confirmation. Please try again.");
-            setTgState("idle");
-            return;
-          }
-          clearPageCaches();
-          window.location.href = "/today";
-          return;
-        }
-
-        if (statusJson.status === "expired" || statusJson.status === "consumed") {
-          setError("Sign-in link expired. Please try again.");
-          setTgState("idle");
-          return;
-        }
-      }
-
-      if (!cancelledRef.current) {
-        setError("Sign-in timed out. Please try again.");
-        setTgState("idle");
-      }
-    };
-
-    void poll();
-  }, []);
-
-  const cancelTelegramLogin = () => {
-    cancelledRef.current = true;
-    setTgState("idle");
-  };
-
-  useEffect(() => {
-    return () => {
-      cancelledRef.current = true;
-    };
   }, []);
 
   return (
@@ -165,46 +119,43 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {botUsername && (
-            <div className="mt-6 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="flex-1 border-t" />
-                <span className="text-xs text-muted-foreground">or</span>
-                <div className="flex-1 border-t" />
-              </div>
-
-              {tgState === "idle" ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={startTelegramLogin}
-                >
-                  Sign in with Telegram
-                </Button>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-sm text-center text-muted-foreground">
-                    {tgState === "waiting"
-                      ? "Open Telegram and tap Start to confirm sign-in…"
-                      : "Signing you in…"}
-                  </p>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="w-full"
-                    onClick={cancelTelegramLogin}
-                    disabled={tgState === "verifying"}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              )}
+          <div className="mt-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 border-t" />
+              <span className="text-xs text-muted-foreground">or</span>
+              <div className="flex-1 border-t" />
             </div>
-          )}
+
+            <Button variant="outline" className="w-full" asChild>
+              <a href="/api/auth/telegram/start" rel="nofollow">
+                Continue with Telegram
+              </a>
+            </Button>
+
+            {botUsername && (
+              <div className="flex flex-col items-center gap-2">
+                <TelegramLoginButton
+                  botUsername={botUsername}
+                  onAuth={handleTelegramWidgetAuth}
+                  cornerRadius={8}
+                  size="medium"
+                />
+                {telegramStatus && (
+                  <p className="text-xs text-muted-foreground">{telegramStatus}</p>
+                )}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginInner />
+    </Suspense>
   );
 }
