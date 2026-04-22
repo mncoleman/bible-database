@@ -439,13 +439,20 @@ export function SettingsForm({ settings }: { settings: NonNullable<ReturnType<ty
               ) : telegramIdentity ? (
                 <>
                   <p className="text-sm text-muted-foreground">
-                    Linked as{" "}
-                    <span className="text-foreground font-medium">
-                      {telegramIdentity.telegram_username
+                    {(() => {
+                      const label = telegramIdentity.telegram_username
                         ? `@${telegramIdentity.telegram_username}`
-                        : telegramIdentity.first_name}
-                    </span>
-                    . You can sign in with Telegram from the login screen.
+                        : telegramIdentity.first_name?.trim() || null;
+                      return label ? (
+                        <>
+                          Linked as{" "}
+                          <span className="text-foreground font-medium">{label}</span>.
+                        </>
+                      ) : (
+                        <>Telegram account linked.</>
+                      );
+                    })()}{" "}
+                    You can sign in with Telegram from the login screen.
                   </p>
                   <Button
                     variant="outline"

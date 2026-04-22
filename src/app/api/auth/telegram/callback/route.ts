@@ -51,6 +51,15 @@ export async function GET(request: Request) {
   const payload = await verifyTelegramIdToken(tokens.id_token);
   if (!payload) return fail(origin, "invalid_id_token");
 
+  console.log("[telegram-oidc] id_token claims", {
+    sub: payload.sub,
+    username: payload.username,
+    preferred_username: payload.preferred_username,
+    first_name: payload.first_name,
+    last_name: payload.last_name,
+    hasPhoto: !!payload.photo_url,
+  });
+
   // Treat sub as an opaque string — Telegram subs can exceed JS safe integer
   // and even Postgres bigint ranges, so don't coerce to number.
   const telegramId = typeof payload.sub === "string" ? payload.sub : String(payload.sub ?? "");
@@ -78,13 +87,15 @@ export async function GET(request: Request) {
       );
     }
 
+    const telegramUsername = payload.username ?? payload.preferred_username ?? null;
+
     const { error: upsertError } = await admin
       .from("telegram_identities")
       .upsert(
         {
           user_id: userId,
           telegram_id: telegramId,
-          telegram_username: payload.username ?? null,
+          telegram_username: telegramUsername,
           first_name: payload.first_name ?? "",
           last_name: payload.last_name ?? null,
           photo_url: payload.photo_url ?? null,

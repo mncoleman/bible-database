@@ -133,7 +133,10 @@ export type TelegramIdTokenPayload = {
   iss: string;
   exp: number;
   iat: number;
+  // Telegram surfaces the handle in the OIDC-standard preferred_username
+  // claim; the custom `username` claim is often empty.
   username?: string;
+  preferred_username?: string;
   first_name?: string;
   last_name?: string;
   photo_url?: string;
