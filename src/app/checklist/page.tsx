@@ -299,12 +299,12 @@ export default function ChecklistPage() {
                               style={{ width: `${catchupFraction * 100}%` }}
                             />
                           )}
-                          <span className="relative">{ch}</span>
+                          <span className="relative text-[3rem] leading-none">{ch}</span>
                           {chapterComplete && (
                             <Check className="absolute top-0.5 right-0.5 h-2.5 w-2.5" />
                           )}
                           <span className={cn(
-                            "absolute bottom-0.5 left-0.5 text-[0.45rem] leading-none tabular-nums",
+                            "absolute bottom-0.5 left-0.5 text-[1.8rem] leading-none tabular-nums",
                             chapterComplete ? "opacity-70" : "opacity-50"
                           )}>
                             {chapterVerses}
