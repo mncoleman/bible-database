@@ -489,6 +489,17 @@
   animation: fade-in 0.3s ease-out both;
 }
 
+/* Checklist toggle pulse — translucent check/X grows from center then fades */
+@keyframes checklist-toggle-pulse {
+  0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
+  35% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.55; }
+  70% { transform: translate(-50%, -50%) scale(1.4); opacity: 0.35; }
+  100% { transform: translate(-50%, -50%) scale(1.7); opacity: 0; }
+}
+.animate-checklist-toggle {
+  animation: checklist-toggle-pulse 0.65s ease-out forwards;
+}
+
 /* Animated bible logo page flip */
 @keyframes bible-page-flip {
   0%, 20% { transform: scaleX(1); opacity: 1; }
