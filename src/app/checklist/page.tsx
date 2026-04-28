@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useCallback } from "react";
 import { differenceInDays, parseISO } from "date-fns";
-import { Check, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsDownUp, ChevronsUpDown, X } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -38,6 +38,12 @@ export default function ChecklistPage() {
   const [pendingChapters, setPendingChapters] = useState<Set<string>>(
     () => new Set()
   );
+
+  // Track recent toggle animations: chapterKey → "check" | "uncheck" | nonce string
+  // The nonce changes per toggle so React remounts the overlay and replays the animation.
+  const [toggleAnims, setToggleAnims] = useState<
+    Map<string, { kind: "check" | "uncheck"; nonce: number }>
+  >(() => new Map());
 
   const ranges: VerseRange[] = entries.map((e) => ({
     startVerseId: e.start_verse_id,
@@ -132,6 +138,16 @@ export default function ChecklistPage() {
         next.delete(chapterKey);
         return next;
       });
+
+    // Trigger toggle animation overlay (green check or red X)
+    setToggleAnims((prev) => {
+      const next = new Map(prev);
+      next.set(chapterKey, {
+        kind: isComplete ? "uncheck" : "check",
+        nonce: Date.now(),
+      });
+      return next;
+    });
 
     if (isComplete) {
       // Uncheck: delete all entries fully contained within this chapter
@@ -267,9 +283,11 @@ export default function ChecklistPage() {
                         );
                       const chapterComplete = chapterRead >= chapterVerses;
                       const chapterPartial = chapterRead > 0 && !chapterComplete;
-                      const isPending = pendingChapters.has(`${book.bibleOrder}-${ch}`);
-                      const catchupFraction = catchupMap.get(`${book.bibleOrder}-${ch}`) ?? 0;
+                      const chapterKey = `${book.bibleOrder}-${ch}`;
+                      const isPending = pendingChapters.has(chapterKey);
+                      const catchupFraction = catchupMap.get(chapterKey) ?? 0;
                       const hasCatchup = catchupFraction > 0 && !chapterComplete;
+                      const toggleAnim = toggleAnims.get(chapterKey);
 
                       return (
                         <button
@@ -299,16 +317,45 @@ export default function ChecklistPage() {
                               style={{ width: `${catchupFraction * 100}%` }}
                             />
                           )}
-                          <span className="relative">{ch}</span>
+                          <span className="relative text-[3rem] leading-none">{ch}</span>
                           {chapterComplete && (
-                            <Check className="absolute top-0.5 right-0.5 h-2.5 w-2.5" />
+                            <Check className="absolute top-1 right-1 h-6 w-6" />
                           )}
                           <span className={cn(
-                            "absolute bottom-0.5 left-0.5 text-[0.45rem] leading-none tabular-nums",
+                            "absolute bottom-0.5 left-0.5 text-[1.8rem] leading-none tabular-nums",
                             chapterComplete ? "opacity-70" : "opacity-50"
                           )}>
                             {chapterVerses}
                           </span>
+                          {toggleAnim && (
+                            <span
+                              key={toggleAnim.nonce}
+                              aria-hidden
+                              className="animate-checklist-toggle pointer-events-none absolute top-1/2 left-1/2 z-10"
+                              onAnimationEnd={() => {
+                                setToggleAnims((prev) => {
+                                  const next = new Map(prev);
+                                  const cur = next.get(chapterKey);
+                                  if (cur && cur.nonce === toggleAnim.nonce) {
+                                    next.delete(chapterKey);
+                                  }
+                                  return next;
+                                });
+                              }}
+                            >
+                              {toggleAnim.kind === "check" ? (
+                                <Check
+                                  className="h-16 w-16 text-green-500"
+                                  strokeWidth={3}
+                                />
+                              ) : (
+                                <X
+                                  className="h-16 w-16 text-red-500"
+                                  strokeWidth={3}
+                                />
+                              )}
+                            </span>
+                          )}
                         </button>
                       );
                     }
