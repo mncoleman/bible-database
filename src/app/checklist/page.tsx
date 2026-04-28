@@ -317,12 +317,12 @@ export default function ChecklistPage() {
                               style={{ width: `${catchupFraction * 100}%` }}
                             />
                           )}
-                          <span className="relative text-[3rem] leading-none">{ch}</span>
+                          <span className="relative text-[1.5rem] sm:text-[3rem] leading-none">{ch}</span>
                           {chapterComplete && (
-                            <Check className="absolute top-1 right-1 h-6 w-6" />
+                            <Check className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 h-3 w-3 sm:h-6 sm:w-6" />
                           )}
                           <span className={cn(
-                            "absolute bottom-0.5 left-0.5 text-[1.8rem] leading-none tabular-nums",
+                            "absolute bottom-0.5 left-0.5 text-[0.9rem] sm:text-[1.8rem] leading-none tabular-nums",
                             chapterComplete ? "opacity-70" : "opacity-50"
                           )}>
                             {chapterVerses}
@@ -345,12 +345,12 @@ export default function ChecklistPage() {
                             >
                               {toggleAnim.kind === "check" ? (
                                 <Check
-                                  className="h-16 w-16 text-green-500"
+                                  className="h-8 w-8 sm:h-16 sm:w-16 text-green-500"
                                   strokeWidth={3}
                                 />
                               ) : (
                                 <X
-                                  className="h-16 w-16 text-red-500"
+                                  className="h-8 w-8 sm:h-16 sm:w-16 text-red-500"
                                   strokeWidth={3}
                                 />
                               )}

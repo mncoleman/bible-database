@@ -492,12 +492,12 @@
 /* Checklist toggle pulse — translucent check/X grows from center then fades */
 @keyframes checklist-toggle-pulse {
   0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
-  35% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.55; }
-  70% { transform: translate(-50%, -50%) scale(1.4); opacity: 0.35; }
-  100% { transform: translate(-50%, -50%) scale(1.7); opacity: 0; }
+  20% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.65; }
+  55% { transform: translate(-50%, -50%) scale(2.4); opacity: 0.45; }
+  100% { transform: translate(-50%, -50%) scale(4); opacity: 0; }
 }
 .animate-checklist-toggle {
-  animation: checklist-toggle-pulse 0.65s ease-out forwards;
+  animation: checklist-toggle-pulse 1s ease-out forwards;
 }
 
 /* Animated bible logo page flip */
