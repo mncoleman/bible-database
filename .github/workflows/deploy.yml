@@ -1,0 +1,76 @@
+name: Deploy to ARM server
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Rsync repo to server
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          rsync -az --delete \
+            --exclude='node_modules' \
+            --exclude='.next' \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.env.local' \
+            --exclude='.env.example' \
+            --exclude='.env.production' \
+            --exclude='/supabase' \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new" \
+            ./ "$SSH_USER@$SSH_HOST:/home/$SSH_USER/bible-database/"
+
+      - name: Build image on server
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new "$SSH_USER@$SSH_HOST" \
+            'cd ~/bible-database && docker compose --env-file .env.production build'
+
+      - name: Restart service
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new "$SSH_USER@$SSH_HOST" \
+            'cd ~/bible-database && docker compose --env-file .env.production up -d --no-deps app'
+
+      - name: Health check
+        run: |
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://bible.mncoleman.com/login || true)
+            echo "Attempt $i: HTTP $code"
+            if [ "$code" = "200" ]; then
+              echo "Deploy healthy"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Health check failed"
+          exit 1
