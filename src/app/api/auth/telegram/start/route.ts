@@ -7,11 +7,13 @@ import {
   OAUTH_STATE_COOKIE,
 } from "@/lib/telegram-oidc";
 import { createClient } from "@/lib/supabase/server";
+import { publicOrigin } from "@/lib/public-origin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
+  const origin = publicOrigin(request);
   const link = url.searchParams.get("link") === "1";
   const rawNext = url.searchParams.get("next");
   const next = rawNext && /^\/[^/]/.test(rawNext) ? rawNext : undefined;
@@ -26,7 +28,7 @@ export async function GET(request: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.redirect(
-        `${url.origin}/login?error=unauthenticated&next=${encodeURIComponent(
+        `${origin}/login?error=unauthenticated&next=${encodeURIComponent(
           "/settings"
         )}`
       );
@@ -36,7 +38,7 @@ export async function GET(request: Request) {
 
   const redirectUri =
     process.env.TELEGRAM_OIDC_REDIRECT_URI ??
-    `${url.origin}/api/auth/telegram/callback`;
+    `${origin}/api/auth/telegram/callback`;
 
   const { verifier, challenge } = await generatePkce();
   const state = crypto.randomUUID();

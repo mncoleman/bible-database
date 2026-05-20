@@ -7,6 +7,7 @@ import {
 } from "@/lib/telegram-oidc";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { publicOrigin } from "@/lib/public-origin";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ function fail(origin: string, error: string) {
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const origin = url.origin;
+  const origin = publicOrigin(request);
 
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");

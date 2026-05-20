@@ -35,6 +35,8 @@ import {
   useTelegramIdentity,
   useUnlinkTelegram,
 } from "@/hooks/use-telegram-identity";
+import { useIsAdmin } from "@/hooks/use-is-admin";
+import { Users } from "lucide-react";
 
 export function SettingsForm({ settings }: { settings: NonNullable<ReturnType<typeof useUserSettings>["data"]> }) {
   const { data: logEntries = [] } = useLogEntries();
@@ -58,6 +60,7 @@ export function SettingsForm({ settings }: { settings: NonNullable<ReturnType<ty
 
   const { data: telegramIdentity, isLoading: telegramLoading } = useTelegramIdentity();
   const unlinkTelegram = useUnlinkTelegram();
+  const { data: isAdmin } = useIsAdmin();
 
   const handleTelegramUnlink = async () => {
     try {
@@ -476,6 +479,25 @@ export function SettingsForm({ settings }: { settings: NonNullable<ReturnType<ty
               )}
             </CardContent>
           </Card>
+
+          {isAdmin && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Admin</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Manage users and create invite links.
+                </p>
+                <Button variant="outline" asChild>
+                  <Link href="/settings/users">
+                    <Users className="mr-2 h-4 w-4" />
+                    Manage users
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>
