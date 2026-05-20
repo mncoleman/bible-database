@@ -11,6 +11,15 @@ const withSerwist = withSerwistInit({
 const nextConfig: NextConfig = {
   output: "standalone",
   turbopack: {},
+  experimental: {
+    optimizePackageImports: [
+      "lucide-react",
+      "date-fns",
+      "radix-ui",
+      "@tanstack/react-query",
+      "recharts",
+    ],
+  },
   async headers() {
     return [
       {
