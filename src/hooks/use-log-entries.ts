@@ -105,9 +105,6 @@ export function useCreateLogEntry() {
         queryClient.setQueryData([QUERY_KEY, "date", context.date], context.previousByDate);
       }
     },
-    onSettled: () => {
-      return queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
-    },
   });
 }
 
@@ -171,9 +168,6 @@ export function useUpdateLogEntry() {
         const byDate = context.previousAll?.filter((e) => e.date === date);
         if (byDate) queryClient.setQueryData([QUERY_KEY, "date", date], byDate);
       });
-    },
-    onSettled: () => {
-      return queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
     },
   });
 }
@@ -247,9 +241,6 @@ export function useDeleteLogEntry() {
           [...old, entry].sort((a, b) => b.created_at.localeCompare(a.created_at))
         );
       }
-    },
-    onSettled: () => {
-      return queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
     },
   });
 }
