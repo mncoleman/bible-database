@@ -298,7 +298,6 @@ export default function ChecklistPage() {
                           onClick={() => handleChapterToggle(book.bibleOrder, ch, chapterComplete)}
                           className={cn(
                             "relative flex items-center justify-center rounded text-xs font-medium border cursor-pointer transition-colors aspect-square overflow-hidden",
-                            isPending && "opacity-60 pointer-events-none",
                             chapterComplete &&
                               "bg-primary text-primary-foreground border-primary hover:bg-primary/80",
                             chapterPartial &&
