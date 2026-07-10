@@ -1,6 +1,6 @@
 # Bible Tracker
 
-A personal Bible reading tracker built with Next.js, React, and self-hosted Supabase. Track daily reading progress, visualize completion across all 66 books, and stay on pace to read the entire Bible.
+A personal Bible reading tracker built with Next.js, React, and Postgres. Track daily reading progress, visualize completion across all 66 books, and stay on pace to read the entire Bible.
 
 Live at [bible.mncoleman.com](https://bible.mncoleman.com).
 
@@ -24,10 +24,11 @@ Live at [bible.mncoleman.com](https://bible.mncoleman.com).
 
 - **Framework:** Next.js 16 + React 19 + TypeScript
 - **UI:** shadcn/ui (New York style) + Tailwind CSS v4
-- **Backend:** Self-hosted Supabase (Postgres 17 + GoTrue + PostgREST + Realtime + Storage)
+- **Backend:** The app's own API routes + Postgres 17 (no external backend services)
+- **Auth:** Self-contained — bcrypt password hashes + JWT session cookie, Telegram OIDC as second method
 - **State:** @tanstack/react-query
 - **PWA:** Serwist service worker
-- **Hosting:** Oracle Cloud ARM (Ampere A1, 4 cores / 23 GB RAM) — single instance running Caddy + Next.js (standalone) + self-hosted Supabase
+- **Hosting:** Oracle Cloud ARM (Ampere A1, 4 cores / 23 GB RAM) — single instance running Caddy + Next.js (standalone) + Postgres
 
 ## Architecture
 
@@ -36,13 +37,11 @@ Everything runs on one Oracle Cloud ARM instance at `bible.mncoleman.com`:
 ```
 Internet (TCP+UDP 443)
   └─ Caddy (auto-SSL, zstd+gzip, HTTP/2 + HTTP/3)
-      ├─ /auth/v1/*, /rest/v1/*, /realtime/v1/*, /storage/v1/*, /functions/v1/*
-      │     → 127.0.0.1:8000 (Supabase Kong)
-      └─ everything else
-            → 127.0.0.1:3001 (Next.js standalone)
+      └─ 127.0.0.1:3001 (Next.js standalone)
+            └─ bible-db (postgres:17-alpine, compose network only)
 ```
 
-Same-origin design means no CORS, no cross-origin cookies, and a tight CSP. The app and Supabase share a domain.
+Two containers total. The app's API route handlers and server actions query Postgres directly; sessions are a signed JWT cookie. No CORS, no cross-origin cookies, tight CSP.
 
 ## Getting Started
 
@@ -50,7 +49,7 @@ Same-origin design means no CORS, no cross-origin cookies, and a tight CSP. The 
 
 - Node.js 20+
 - npm
-- Docker (for self-hosted Supabase)
+- Docker (for Postgres)
 
 ### 1. Clone and install
 
@@ -60,25 +59,19 @@ cd bible-database
 npm install
 ```
 
-### 2. Set up Supabase (local dev)
-
-For local development you can either:
-- **Point at the production server's Supabase** (read-only-ish — if you accidentally write, it hits prod)
-- **Stand up a local Supabase stack** by cloning the official `supabase/docker/` directory and running it locally. See [Supabase self-hosting docs](https://supabase.com/docs/guides/self-hosting/docker).
-
-Apply migrations in order from `supabase/migrations/`:
+### 2. Set up Postgres (local dev)
 
 ```bash
-for f in supabase/migrations/*.sql; do
-  docker exec -i supabase-db psql -U postgres -d postgres < "$f"
-done
+docker run -d --name bible-db-dev -e POSTGRES_USER=bible -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=bible -p 5432:5432 postgres:17-alpine
+docker exec -i bible-db-dev psql -U bible -d bible < db/schema.sql
 ```
 
-Grant table privileges (needed by PostgREST):
+Create a first user (invite flow needs an existing admin, so bootstrap by hand):
 
-```sql
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
-NOTIFY pgrst, 'reload schema';
+```bash
+docker exec -i bible-db-dev psql -U bible -d bible -c \
+  "create extension if not exists pgcrypto;
+   insert into users (email, password_hash) values ('you@example.com', crypt('your-password', gen_salt('bf', 10)));"
 ```
 
 ### 3. Configure environment
@@ -86,9 +79,8 @@ NOTIFY pgrst, 'reload schema';
 Create `.env.local`:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-supabase-host
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+DATABASE_URL=postgresql://bible:dev@localhost:5432/bible
+SESSION_SECRET=$(openssl rand -base64 48)
 
 # Optional — only if you want Telegram OIDC in dev
 TELEGRAM_BOT_TOKEN=numeric-id:secret
@@ -142,11 +134,11 @@ src/
 ├── hooks/                        # React Query hooks
 └── lib/
     ├── bible/                    # Verse encoding, books, chapter counts, app URLs
-    ├── supabase/                 # Client, server, admin, middleware, types
+    ├── auth/                     # Sessions, passwords, server helpers
     ├── admin.ts                  # requireAdmin() + ADMIN_EMAIL
     └── public-origin.ts          # X-Forwarded-Host-aware origin helper
 
-supabase/migrations/              # SQL migrations (applied manually)
+db/schema.sql                     # Canonical Postgres schema
 .github/workflows/deploy.yml      # CI/CD
 Dockerfile                        # Multi-stage Next.js standalone build
 docker-compose.yml                # `app` service on 127.0.0.1:3001
@@ -166,7 +158,7 @@ This allows efficient range queries and segment generation across all 31,102 ver
 
 **Email/password** + **Telegram OIDC**. Public signup is disabled — accounts can only be created through an invite link issued from the `/settings/users` admin page.
 
-Admin is hardcoded to `mncoleman003@gmail.com` (see `src/lib/admin.ts`). To change: edit that file + the RLS policies in `supabase/migrations/009_invites.sql`.
+Admin is hardcoded to `mncoleman003@gmail.com` (see `src/lib/admin.ts`). To change: edit that file.
 
 ## Scripts
 
