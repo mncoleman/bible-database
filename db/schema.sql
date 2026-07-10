@@ -57,24 +57,11 @@ create table if not exists user_settings (
   beam_noise_scale real,
   beam_rotation real,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint daily_verse_count_goal_range
-    check (daily_verse_count_goal >= 1 and daily_verse_count_goal <= 31102),
-  constraint beam_count_range
-    check (beam_count is null or (beam_count >= 1 and beam_count <= 50)),
-  constraint beam_speed_range
-    check (beam_speed is null or (beam_speed >= 0 and beam_speed <= 10)),
-  constraint beam_width_range
-    check (beam_width is null or (beam_width >= 0 and beam_width <= 1000)),
-  constraint beam_height_range
-    check (beam_height is null or (beam_height >= 0 and beam_height <= 5000)),
-  constraint beam_noise_intensity_range
-    check (beam_noise_intensity is null or (beam_noise_intensity >= 0 and beam_noise_intensity <= 1)),
-  constraint beam_noise_scale_range
-    check (beam_noise_scale is null or (beam_noise_scale >= 0 and beam_noise_scale <= 100)),
-  constraint beam_rotation_range
-    check (beam_rotation is null or (beam_rotation >= -360 and beam_rotation <= 360))
+  updated_at timestamptz not null default now()
 );
+-- NOTE: the CHECK constraints from old migration 005 are intentionally
+-- absent — they were never applied to production and live data violates
+-- them (e.g. beam_noise_intensity 1.25 > the constraint's max of 1).
 
 create table if not exists telegram_identities (
   id uuid primary key default gen_random_uuid(),
