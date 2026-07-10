@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Bible from "@/lib/bible/bible";
-import type { LogEntry } from "@/lib/supabase/types";
+import type { LogEntry } from "@/lib/types";
 
 export function useDateVerseCounts(entries: LogEntry[]) {
   return useMemo(() => {

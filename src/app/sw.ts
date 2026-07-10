@@ -141,66 +141,32 @@ const runtimeCaching = [
     }),
   },
 
-  // --- Supabase REST API: network-first for reads ---
-  // Must be NetworkFirst (not StaleWhileRevalidate) so that after mutations,
-  // React Query refetches always get fresh server data. SWR would return stale
-  // cached data instantly, causing optimistic updates to revert.
-  //
-  // CRITICAL: match on the /rest/ pathname, NOT a `*.supabase.co` hostname.
-  // Supabase is reverse-proxied SAME-ORIGIN under bible.mncoleman.com, so these
-  // requests have hostname bible.mncoleman.com and a `.supabase.co` check never
-  // matches — the request then falls through to the same-origin SWR catch-all
-  // ("others"), which is exactly the staleness bug this rule exists to prevent.
-  {
-    matcher: ({ url, sameOrigin }: { url: URL; sameOrigin: boolean }) =>
-      (sameOrigin || url.hostname.endsWith(".supabase.co")) &&
-      url.pathname.startsWith("/rest/"),
-    method: "GET" as const,
-    handler: new NetworkFirst({
-      cacheName: "supabase-rest",
-      plugins: [
-        new ExpirationPlugin({
-          maxEntries: 32,
-          maxAgeSeconds: 24 * 60 * 60, // 24 hours
-          maxAgeFrom: "last-used" as const,
-        }),
-      ],
-      networkTimeoutSeconds: 5,
-    }),
-  },
-
-  // --- Auth + realtime + storage + functions: always network, never cache ---
-  // Same-origin matching for the reverse-proxied Supabase paths (see REST note
-  // above) — a `.supabase.co` hostname check would never match in production.
+  // --- Auth: always network, never cache ---
   {
     matcher: /\/api\/auth\/.*/,
     handler: new NetworkOnly({
       networkTimeoutSeconds: 10,
     }),
   },
-  {
-    matcher: ({ url, sameOrigin }: { url: URL; sameOrigin: boolean }) =>
-      (sameOrigin || url.hostname.endsWith(".supabase.co")) &&
-      /^\/(auth|realtime|storage|functions)\//.test(url.pathname),
-    handler: new NetworkOnly({
-      networkTimeoutSeconds: 10,
-    }),
-  },
 
-  // --- Same-origin API routes ---
+  // --- Same-origin API routes (the app's data layer) ---
+  // Must be NetworkFirst (not StaleWhileRevalidate) so that after mutations,
+  // React Query refetches always get fresh server data. SWR would return stale
+  // cached data instantly, causing optimistic updates to revert.
   {
     matcher: ({ sameOrigin, url: { pathname } }: { sameOrigin: boolean; url: URL }) =>
       sameOrigin && pathname.startsWith("/api/"),
     method: "GET" as const,
-    handler: new StaleWhileRevalidate({
+    handler: new NetworkFirst({
       cacheName: "apis",
       plugins: [
         new ExpirationPlugin({
-          maxEntries: 16,
+          maxEntries: 32,
           maxAgeSeconds: 24 * 60 * 60,
           maxAgeFrom: "last-used" as const,
         }),
       ],
+      networkTimeoutSeconds: 5,
     }),
   },
 
@@ -260,14 +226,13 @@ const runtimeCaching = [
   },
 
   // --- Same-origin catch-all ---
-  // Explicitly exclude the reverse-proxied Supabase API prefixes so that a
-  // future reordering can never let /rest/, /auth/, etc. fall through to
-  // StaleWhileRevalidate and reintroduce the data-staleness bug.
+  // Explicitly exclude /api/ so that a future reordering can never let data
+  // reads fall through to StaleWhileRevalidate and reintroduce the
+  // data-staleness bug.
   {
     matcher: ({ url: { pathname }, sameOrigin }: { url: URL; sameOrigin: boolean }) =>
       sameOrigin &&
-      !pathname.startsWith("/api/") &&
-      !/^\/(rest|auth|realtime|storage|functions)\//.test(pathname),
+      !pathname.startsWith("/api/"),
     handler: new StaleWhileRevalidate({
       cacheName: "others",
       plugins: [
@@ -277,14 +242,6 @@ const runtimeCaching = [
           maxAgeSeconds: 24 * 60 * 60,
         }),
       ],
-    }),
-  },
-
-  // --- Supabase catch-all: never cache other Supabase endpoints ---
-  {
-    matcher: ({ url }: { url: URL }) => url.hostname.endsWith(".supabase.co"),
-    handler: new NetworkOnly({
-      networkTimeoutSeconds: 10,
     }),
   },
 
@@ -344,13 +301,17 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Clear Supabase cached data on logout to prevent data leaking to next user
+// Clear cached user data on logout to prevent data leaking to next user
 self.addEventListener("message", (event) => {
   if (event.data?.type === "CLEAR_AUTH_CACHE") {
-    // supabase-rest now actually holds the user's REST data (post same-origin
-    // matcher fix). Also clear "others" so any user-specific same-origin GET
-    // cached there before the fix can't leak to the next user on this device.
-    Promise.all([caches.delete("supabase-rest"), caches.delete("others")]);
+    // "apis" holds the user's data reads; "others" may hold user-specific
+    // same-origin GETs. "supabase-rest" is the pre-migration cache name —
+    // clear it too so stale data from before the Supabase removal dies off.
+    Promise.all([
+      caches.delete("apis"),
+      caches.delete("supabase-rest"),
+      caches.delete("others"),
+    ]);
   }
   // Called on successful sign-in to drop any navigation/page caches that
   // were populated while the user was unauthenticated. Without this, a

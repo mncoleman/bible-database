@@ -1,6 +1,6 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
 import crypto from "crypto";
 import { revalidatePath } from "next/cache";
@@ -26,26 +26,19 @@ export type Invite = {
 
 export async function listUsers(): Promise<AdminUser[]> {
   await requireAdmin();
-  const admin = createAdminClient();
-  const { data, error } = await admin.auth.admin.listUsers();
-  if (error) throw new Error(error.message);
-  return data.users.map((u) => ({
-    id: u.id,
-    email: u.email ?? null,
-    created_at: u.created_at,
-    last_sign_in_at: u.last_sign_in_at ?? null,
-  }));
+  const { rows } = await db.query<AdminUser>(
+    "select id, email, created_at, last_sign_in_at from users order by created_at"
+  );
+  return rows;
 }
 
 export async function listInvites(): Promise<Invite[]> {
   await requireAdmin();
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("invites")
-    .select("id, token, email, created_at, expires_at, used_at, used_by, used_email, note")
-    .order("created_at", { ascending: false });
-  if (error) throw new Error(error.message);
-  return data as Invite[];
+  const { rows } = await db.query<Invite>(
+    `select id, token, email, created_at, expires_at, used_at, used_by, used_email, note
+     from invites order by created_at desc`
+  );
+  return rows;
 }
 
 export async function createInvite(args: {
@@ -54,43 +47,32 @@ export async function createInvite(args: {
   note: string | null;
 }): Promise<Invite> {
   const user = await requireAdmin();
-  const admin = createAdminClient();
 
   const token = crypto.randomBytes(24).toString("base64url");
   const expires_at = args.expiresInDays
     ? new Date(Date.now() + args.expiresInDays * 86400_000).toISOString()
     : null;
 
-  const { data, error } = await admin
-    .from("invites")
-    .insert({
-      token,
-      email: args.email,
-      expires_at,
-      note: args.note,
-      created_by: user.id,
-    })
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
+  const { rows } = await db.query<Invite>(
+    `insert into invites (token, email, expires_at, note, created_by)
+     values ($1, $2, $3, $4, $5) returning *`,
+    [token, args.email, expires_at, args.note, user.id]
+  );
 
   revalidatePath("/settings/users");
-  return data as Invite;
+  return rows[0];
 }
 
 export async function revokeInvite(id: string) {
   await requireAdmin();
-  const admin = createAdminClient();
-  const { error } = await admin.from("invites").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  await db.query("delete from invites where id = $1", [id]);
   revalidatePath("/settings/users");
 }
 
 export async function deleteUser(id: string) {
   const me = await requireAdmin();
   if (me.id === id) throw new Error("Cannot delete yourself");
-  const admin = createAdminClient();
-  const { error } = await admin.auth.admin.deleteUser(id);
-  if (error) throw new Error(error.message);
+  // log_entries / user_settings / telegram_identities all cascade on delete.
+  await db.query("delete from users where id = $1", [id]);
   revalidatePath("/settings/users");
 }

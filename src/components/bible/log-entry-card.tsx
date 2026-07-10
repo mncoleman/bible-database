@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Bible from "@/lib/bible/bible";
-import type { LogEntry } from "@/lib/supabase/types";
+import type { LogEntry } from "@/lib/types";
 import { getAppReadingUrl, type BibleApp, type BibleVersion } from "@/lib/bible/bible-apps";
 
 type Props = {

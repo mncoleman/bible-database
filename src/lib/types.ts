@@ -49,27 +49,3 @@ export type TelegramIdentity = {
   photo_url: string | null;
   created_at: string;
 };
-
-export type Database = {
-  public: {
-    Tables: {
-      log_entries: {
-        Row: LogEntry;
-        Insert: Omit<LogEntry, "id" | "created_at" | "updated_at">;
-        Update: Partial<Omit<LogEntry, "id" | "created_at" | "updated_at">>;
-      };
-      user_settings: {
-        Row: UserSettings;
-        Insert: Omit<UserSettings, "id" | "created_at" | "updated_at">;
-        Update: Partial<
-          Omit<UserSettings, "id" | "created_at" | "updated_at">
-        >;
-      };
-      telegram_identities: {
-        Row: TelegramIdentity;
-        Insert: Omit<TelegramIdentity, "id" | "created_at">;
-        Update: Partial<Omit<TelegramIdentity, "id" | "created_at">>;
-      };
-    };
-  };
-};

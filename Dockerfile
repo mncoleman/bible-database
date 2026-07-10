@@ -13,11 +13,10 @@ RUN npm ci
 FROM deps AS builder
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-# NEXT_PUBLIC_* vars are baked into the browser bundle at build time.
-ARG NEXT_PUBLIC_SUPABASE_URL
-ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+# src/lib/db.ts throws at import time without a DATABASE_URL; give the build
+# a placeholder — no connection is opened during `next build`.
+ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
+ENV SESSION_SECRET=build-placeholder
 RUN npm run build
 
 FROM node:20-bookworm-slim AS app

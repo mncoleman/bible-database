@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
 import { SignupForm } from "./signup-form";
 
 export const dynamic = "force-dynamic";
@@ -7,13 +7,17 @@ type Props = { params: Promise<{ token: string }> };
 
 export default async function SignupPage({ params }: Props) {
   const { token } = await params;
-  const admin = createAdminClient();
 
-  const { data: invite } = await admin
-    .from("invites")
-    .select("token, email, expires_at, used_at")
-    .eq("token", token)
-    .maybeSingle();
+  const { rows } = await db.query<{
+    token: string;
+    email: string | null;
+    expires_at: string | null;
+    used_at: string | null;
+  }>(
+    "select token, email, expires_at, used_at from invites where token = $1",
+    [token]
+  );
+  const invite = rows[0];
 
   if (!invite) {
     return (

@@ -3,9 +3,6 @@ services:
     build:
       context: .
       target: app
-      args:
-        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
     image: bible-database:app
     container_name: bible-database-app
     restart: unless-stopped
@@ -17,9 +14,31 @@ services:
       - "127.0.0.1:3001:3001"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3001/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 20s
+
+  db:
+    image: postgres:17-alpine
+    container_name: bible-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bible
+      POSTGRES_PASSWORD: ${BIBLE_DB_PASSWORD:?set in .env.production}
+      POSTGRES_DB: bible
+    volumes:
+      - bible_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bible -d bible"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  bible_db_data:

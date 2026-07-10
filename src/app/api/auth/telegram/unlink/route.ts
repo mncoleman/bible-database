@@ -1,20 +1,24 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { db } from "@/lib/db";
+import { getSessionUser } from "@/lib/auth/server";
+
+export const dynamic = "force-dynamic";
 
 export async function POST() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   }
 
-  const { error } = await supabase
-    .from("telegram_identities")
-    .delete()
-    .eq("user_id", user.id);
-
-  if (error) {
-    return NextResponse.json({ error: "unlink_failed", detail: error.message }, { status: 500 });
+  try {
+    await db.query("delete from telegram_identities where user_id = $1", [
+      user.id,
+    ]);
+  } catch (e) {
+    return NextResponse.json(
+      { error: "unlink_failed", detail: e instanceof Error ? e.message : "" },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ ok: true });

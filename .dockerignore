@@ -17,4 +17,4 @@ README.md
 .idea
 coverage
 .next/cache
-/supabase
+/db

@@ -17,7 +17,7 @@ import { useDateVerseCounts } from "@/hooks/use-date-verse-counts";
 import { useUserSettings } from "@/hooks/use-user-settings";
 import { LogEntryCard } from "@/components/bible/log-entry-card";
 import { LogEntryForm } from "@/components/forms/log-entry-form";
-import type { LogEntry } from "@/lib/supabase/types";
+import type { LogEntry } from "@/lib/types";
 import type { BibleApp, BibleVersion } from "@/lib/bible/bible-apps";
 import { toast } from "sonner";
 

@@ -1,5 +1,5 @@
 import Bible, { type VerseRange } from "./bible";
-import type { LogEntry } from "@/lib/supabase/types";
+import type { LogEntry } from "@/lib/types";
 
 export type Recommendation = {
   label: string;

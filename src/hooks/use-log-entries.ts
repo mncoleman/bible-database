@@ -2,42 +2,28 @@
 
 import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createClient, getAuthenticatedUser } from "@/lib/supabase/client";
-import type { LogEntry } from "@/lib/supabase/types";
+import { api } from "@/lib/api";
+import type { LogEntry } from "@/lib/types";
 
 const QUERY_KEY = "log-entries";
 
 export function useLogEntries() {
-  const supabase = createClient();
-
   return useQuery({
     queryKey: [QUERY_KEY],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("log_entries")
-        .select("*")
-        .order("date", { ascending: false });
-      if (error) throw error;
-      return data as LogEntry[];
-    },
+    queryFn: () => api<LogEntry[]>("/api/log-entries"),
   });
 }
 
 export function useLogEntriesByDate(date: string) {
-  const supabase = createClient();
-
-  return useQuery({
-    queryKey: [QUERY_KEY, "date", date],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("log_entries")
-        .select("*")
-        .eq("date", date)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as LogEntry[];
-    },
-  });
+  const { data: entries, ...rest } = useLogEntries();
+  const filtered = useMemo(
+    () =>
+      entries
+        ?.filter((e) => e.date === date)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at)),
+    [entries, date]
+  );
+  return { data: filtered, ...rest };
 }
 
 export function useFilteredLogEntries(lookBackDate: string | null | undefined) {
@@ -50,29 +36,21 @@ export function useFilteredLogEntries(lookBackDate: string | null | undefined) {
 }
 
 export function useCreateLogEntry() {
-  const supabase = createClient();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (entry: {
+    mutationFn: (entry: {
       date: string;
       start_verse_id: number;
       end_verse_id: number;
-    }) => {
-      const user = await getAuthenticatedUser();
-
-      const { data, error } = await supabase
-        .from("log_entries")
-        .insert({ ...entry, user_id: user.id })
-        .select()
-        .single();
-      if (error) throw error;
-      return data as LogEntry;
-    },
+    }) =>
+      api<LogEntry>("/api/log-entries", {
+        method: "POST",
+        body: JSON.stringify(entry),
+      }),
     onMutate: async (newEntry) => {
       await queryClient.cancelQueries({ queryKey: [QUERY_KEY] });
       const previousAll = queryClient.getQueryData<LogEntry[]>([QUERY_KEY]);
-      const previousByDate = queryClient.getQueryData<LogEntry[]>([QUERY_KEY, "date", newEntry.date]);
 
       const tempId = `temp-${Date.now()}-${Math.random()}`;
       const optimistic: LogEntry = {
@@ -85,35 +63,32 @@ export function useCreateLogEntry() {
         updated_at: new Date().toISOString(),
       };
 
-      queryClient.setQueryData<LogEntry[]>([QUERY_KEY], (old = []) => [optimistic, ...old]);
-      queryClient.setQueryData<LogEntry[]>([QUERY_KEY, "date", newEntry.date], (old = []) => [optimistic, ...old]);
+      queryClient.setQueryData<LogEntry[]>([QUERY_KEY], (old = []) => [
+        optimistic,
+        ...old,
+      ]);
 
-      return { previousAll, previousByDate, date: newEntry.date, tempId };
+      return { previousAll, tempId };
     },
     onSuccess: (realEntry, _variables, context) => {
       if (!context?.tempId) return;
-      const replace = (entries: LogEntry[] | undefined) =>
-        (entries ?? []).map((e) => (e.id === context.tempId ? realEntry : e));
-      queryClient.setQueryData<LogEntry[]>([QUERY_KEY], replace);
-      queryClient.setQueryData<LogEntry[]>([QUERY_KEY, "date", realEntry.date], replace);
+      queryClient.setQueryData<LogEntry[]>([QUERY_KEY], (old = []) =>
+        old.map((e) => (e.id === context.tempId ? realEntry : e))
+      );
     },
     onError: (_err, _newEntry, context) => {
       if (context?.previousAll !== undefined) {
         queryClient.setQueryData([QUERY_KEY], context.previousAll);
-      }
-      if (context?.previousByDate !== undefined) {
-        queryClient.setQueryData([QUERY_KEY, "date", context.date], context.previousByDate);
       }
     },
   });
 }
 
 export function useUpdateLogEntry() {
-  const supabase = createClient();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       id,
       ...updates
     }: {
@@ -121,77 +96,45 @@ export function useUpdateLogEntry() {
       date?: string;
       start_verse_id?: number;
       end_verse_id?: number;
-    }) => {
-      const user = await getAuthenticatedUser();
-
-      const { data, error } = await supabase
-        .from("log_entries")
-        .update(updates)
-        .eq("id", id)
-        .eq("user_id", user.id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as LogEntry;
-    },
+    }) =>
+      api<LogEntry>(`/api/log-entries/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(updates),
+      }),
     onMutate: async ({ id, ...updates }) => {
       await queryClient.cancelQueries({ queryKey: [QUERY_KEY] });
       const previousAll = queryClient.getQueryData<LogEntry[]>([QUERY_KEY]);
 
-      const applyUpdate = (entries: LogEntry[] | undefined) =>
-        (entries ?? []).map((e) => (e.id === id ? { ...e, ...updates } : e));
+      queryClient.setQueryData<LogEntry[]>([QUERY_KEY], (old = []) =>
+        old.map((e) => (e.id === id ? { ...e, ...updates } : e))
+      );
 
-      queryClient.setQueryData<LogEntry[]>([QUERY_KEY], applyUpdate);
-
-      // Update any by-date queries that contain this entry
-      const entry = previousAll?.find((e) => e.id === id);
-      const affectedDates = new Set<string>();
-      if (entry) affectedDates.add(entry.date);
-      if (updates.date) affectedDates.add(updates.date);
-      affectedDates.forEach((date) => {
-        queryClient.setQueryData<LogEntry[]>([QUERY_KEY, "date", date], applyUpdate);
-      });
-
-      return { previousAll, affectedDates };
+      return { previousAll };
     },
     onSuccess: (realEntry) => {
-      const applyReal = (entries: LogEntry[] | undefined) =>
-        (entries ?? []).map((e) => (e.id === realEntry.id ? realEntry : e));
-      queryClient.setQueryData<LogEntry[]>([QUERY_KEY], applyReal);
-      queryClient.setQueryData<LogEntry[]>([QUERY_KEY, "date", realEntry.date], applyReal);
+      queryClient.setQueryData<LogEntry[]>([QUERY_KEY], (old = []) =>
+        old.map((e) => (e.id === realEntry.id ? realEntry : e))
+      );
     },
     onError: (_err, _vars, context) => {
       if (context?.previousAll !== undefined) {
         queryClient.setQueryData([QUERY_KEY], context.previousAll);
       }
-      context?.affectedDates?.forEach((date) => {
-        const byDate = context.previousAll?.filter((e) => e.date === date);
-        if (byDate) queryClient.setQueryData([QUERY_KEY, "date", date], byDate);
-      });
     },
   });
 }
 
 export function useBulkCreateLogEntries() {
-  const supabase = createClient();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (
       entries: { date: string; start_verse_id: number; end_verse_id: number }[]
     ) => {
-      const user = await getAuthenticatedUser();
-
-      const rows = entries.map((e) => ({ ...e, user_id: user.id }));
-      // Insert in batches of 500 to avoid payload limits
-      const batchSize = 500;
-      let inserted = 0;
-      for (let i = 0; i < rows.length; i += batchSize) {
-        const batch = rows.slice(i, i + batchSize);
-        const { error } = await supabase.from("log_entries").insert(batch);
-        if (error) throw error;
-        inserted += batch.length;
-      }
+      const { inserted } = await api<{ inserted: number }>(
+        "/api/log-entries/bulk",
+        { method: "POST", body: JSON.stringify({ entries }) }
+      );
       return inserted;
     },
     onSuccess: () => {
@@ -201,45 +144,24 @@ export function useBulkCreateLogEntries() {
 }
 
 export function useDeleteLogEntry() {
-  const supabase = createClient();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const user = await getAuthenticatedUser();
-
-      const { error } = await supabase
-        .from("log_entries")
-        .delete()
-        .eq("id", id)
-        .eq("user_id", user.id);
-      if (error) throw error;
-    },
+    mutationFn: (id: string) =>
+      api<{ ok: true }>(`/api/log-entries/${id}`, { method: "DELETE" }),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: [QUERY_KEY] });
       const previousAll = queryClient.getQueryData<LogEntry[]>([QUERY_KEY]);
 
-      const entry = previousAll?.find((e) => e.id === id);
       queryClient.setQueryData<LogEntry[]>([QUERY_KEY], (old = []) =>
         old.filter((e) => e.id !== id)
       );
-      if (entry) {
-        queryClient.setQueryData<LogEntry[]>([QUERY_KEY, "date", entry.date], (old = []) =>
-          old.filter((e) => e.id !== id)
-        );
-      }
 
-      return { previousAll, deletedEntry: entry };
+      return { previousAll };
     },
     onError: (_err, _id, context) => {
       if (context?.previousAll !== undefined) {
         queryClient.setQueryData([QUERY_KEY], context.previousAll);
-      }
-      if (context?.deletedEntry) {
-        const entry = context.deletedEntry;
-        queryClient.setQueryData<LogEntry[]>([QUERY_KEY, "date", entry.date], (old = []) =>
-          [...old, entry].sort((a, b) => b.created_at.localeCompare(a.created_at))
-        );
       }
     },
   });

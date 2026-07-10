@@ -5,8 +5,13 @@ import {
   verifyTelegramIdToken,
   OAUTH_STATE_COOKIE,
 } from "@/lib/telegram-oidc";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import { findUserById, touchLastSignIn } from "@/lib/auth/users";
+import {
+  SESSION_COOKIE,
+  SESSION_COOKIE_OPTIONS,
+  signSession,
+} from "@/lib/auth/session";
 import { publicOrigin } from "@/lib/public-origin";
 
 export const dynamic = "force-dynamic";
@@ -52,37 +57,24 @@ export async function GET(request: Request) {
   const payload = await verifyTelegramIdToken(tokens.id_token);
   if (!payload) return fail(origin, "invalid_id_token");
 
-  console.log("[telegram-oidc] id_token claims", {
-    sub: payload.sub,
-    username: payload.username,
-    preferred_username: payload.preferred_username,
-    first_name: payload.first_name,
-    last_name: payload.last_name,
-    hasPhoto: !!payload.photo_url,
-  });
-
   // Treat sub as an opaque string — Telegram subs can exceed JS safe integer
   // and even Postgres bigint ranges, so don't coerce to number.
   const telegramId = typeof payload.sub === "string" ? payload.sub : String(payload.sub ?? "");
   if (!telegramId) return fail(origin, "invalid_id_token");
 
-  const admin = createAdminClient();
-
   // ---- LINK MODE ----
   // User id was resolved and baked into the signed state at /start time. We
-  // don't re-read Supabase cookies here because they aren't reliably present
+  // don't re-read session cookies here because they aren't reliably present
   // on the cross-site return from oauth.telegram.org.
   if (oauthData.link) {
     const userId = oauthData.linkUserId;
     if (!userId) return fail(origin, "unauthenticated");
 
-    const { data: existing } = await admin
-      .from("telegram_identities")
-      .select("user_id")
-      .eq("telegram_id", telegramId)
-      .maybeSingle();
-
-    if (existing && existing.user_id !== userId) {
+    const { rows: existing } = await db.query<{ user_id: string }>(
+      "select user_id from telegram_identities where telegram_id = $1",
+      [telegramId]
+    );
+    if (existing[0] && existing[0].user_id !== userId) {
       return NextResponse.redirect(
         `${origin}/settings?error=telegram_already_linked_to_other_account`
       );
@@ -90,28 +82,31 @@ export async function GET(request: Request) {
 
     const telegramUsername = payload.username ?? payload.preferred_username ?? null;
 
-    const { error: upsertError } = await admin
-      .from("telegram_identities")
-      .upsert(
-        {
-          user_id: userId,
-          telegram_id: telegramId,
-          telegram_username: telegramUsername,
-          first_name: payload.first_name ?? "",
-          last_name: payload.last_name ?? null,
-          photo_url: payload.photo_url ?? null,
-        },
-        { onConflict: "user_id" }
+    try {
+      await db.query(
+        `insert into telegram_identities
+           (user_id, telegram_id, telegram_username, first_name, last_name, photo_url)
+         values ($1, $2, $3, $4, $5, $6)
+         on conflict (user_id) do update set
+           telegram_id = excluded.telegram_id,
+           telegram_username = excluded.telegram_username,
+           first_name = excluded.first_name,
+           last_name = excluded.last_name,
+           photo_url = excluded.photo_url`,
+        [
+          userId,
+          telegramId,
+          telegramUsername,
+          payload.first_name ?? "",
+          payload.last_name ?? null,
+          payload.photo_url ?? null,
+        ]
       );
-
-    if (upsertError) {
+    } catch (e) {
       console.error("[telegram-link] upsert failed", {
         userId,
         telegramId,
-        code: upsertError.code,
-        message: upsertError.message,
-        details: upsertError.details,
-        hint: upsertError.hint,
+        message: e instanceof Error ? e.message : String(e),
       });
       return fail(origin, "link_failed");
     }
@@ -120,44 +115,24 @@ export async function GET(request: Request) {
   }
 
   // ---- SIGN-IN MODE ----
-  // Look up the linked user and mint a Supabase session on our origin.
-  const { data: identity } = await admin
-    .from("telegram_identities")
-    .select("user_id")
-    .eq("telegram_id", telegramId)
-    .maybeSingle();
-
-  if (!identity) {
+  // Look up the linked user and mint a session directly — no magic-link
+  // round-trip needed now that sessions are our own JWT cookie.
+  const { rows: identity } = await db.query<{ user_id: string }>(
+    "select user_id from telegram_identities where telegram_id = $1",
+    [telegramId]
+  );
+  if (!identity[0]) {
     return NextResponse.redirect(`${origin}/login?error=telegram_not_linked`);
   }
 
-  const { data: userResult, error: userError } =
-    await admin.auth.admin.getUserById(identity.user_id);
-  if (userError || !userResult?.user?.email) {
-    return fail(origin, "user_not_found");
-  }
+  const user = await findUserById(identity[0].user_id);
+  if (!user) return fail(origin, "user_not_found");
 
-  const { data: linkData, error: linkError } =
-    await admin.auth.admin.generateLink({
-      type: "magiclink",
-      email: userResult.user.email,
-    });
-  if (linkError || !linkData?.properties?.hashed_token) {
-    return fail(origin, "session_mint_failed");
-  }
-
-  // Server-side verifyOtp writes session cookies onto this response via the
-  // cookies() adapter in createClient. Staying on-origin is what makes the
-  // PWA case work — no hop through Supabase's /verify endpoint.
-  const supabase = await createClient();
-  const { error: verifyError } = await supabase.auth.verifyOtp({
-    token_hash: linkData.properties.hashed_token,
-    type: "magiclink",
-  });
-
-  if (verifyError) return fail(origin, "session_mint_failed");
+  await touchLastSignIn(user.id);
+  const sessionToken = await signSession({ id: user.id, email: user.email });
 
   const response = NextResponse.redirect(`${origin}${oauthData.next ?? "/today"}`);
+  response.cookies.set(SESSION_COOKIE, sessionToken, SESSION_COOKIE_OPTIONS);
   // Clear the state cookie — it's already been consumed.
   response.cookies.set(OAUTH_STATE_COOKIE, "", { path: "/", maxAge: 0 });
   return response;

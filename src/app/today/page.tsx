@@ -18,7 +18,7 @@ import {
 } from "@/hooks/use-log-entries";
 import { useUserSettings } from "@/hooks/use-user-settings";
 import Bible from "@/lib/bible/bible";
-import type { LogEntry } from "@/lib/supabase/types";
+import type { LogEntry } from "@/lib/types";
 import { todayString } from "@/lib/bible/date-helpers";
 import { toast } from "sonner";
 import type { BibleApp, BibleVersion } from "@/lib/bible/bible-apps";

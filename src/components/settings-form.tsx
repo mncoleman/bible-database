@@ -26,7 +26,6 @@ import {
   type BibleApp,
 } from "@/lib/bible/bible-apps";
 import Bible from "@/lib/bible/bible";
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -123,9 +122,8 @@ export function SettingsForm({ settings }: { settings: NonNullable<ReturnType<ty
   };
 
   const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    // Clear cached Supabase data so it doesn't leak to the next user
+    await fetch("/api/auth/logout", { method: "POST" });
+    // Clear cached data so it doesn't leak to the next user
     if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
       navigator.serviceWorker.controller.postMessage({ type: "CLEAR_AUTH_CACHE" });
     }

@@ -6,7 +6,7 @@ import {
   signOauthState,
   OAUTH_STATE_COOKIE,
 } from "@/lib/telegram-oidc";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth/server";
 import { publicOrigin } from "@/lib/public-origin";
 
 export const dynamic = "force-dynamic";
@@ -24,8 +24,7 @@ export async function GET(request: Request) {
   // on the cross-site return leg.
   let linkUserId: string | undefined;
   if (link) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getSessionUser();
     if (!user) {
       return NextResponse.redirect(
         `${origin}/login?error=unauthenticated&next=${encodeURIComponent(
