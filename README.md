@@ -107,9 +107,7 @@ Pushes to `main` auto-deploy via `.github/workflows/deploy.yml`:
 
 Required GitHub repo secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`.
 
-Env vars live in `/home/ubuntu/bible-database/.env.production` on the server, gitignored. Edit in place via SSH; never commit.
-
-`NEXT_PUBLIC_*` vars are baked into the JS bundle at `next build`. They flow: `.env.production` on server → compose `--env-file` → `build.args` in docker-compose.yml → `ARG` in Dockerfile builder stage. Don't break that chain.
+Env vars live in `/home/ubuntu/bible-database/.env.production` on the server, gitignored. Edit in place via SSH; never commit. All env vars are runtime-only (`DATABASE_URL`, `SESSION_SECRET`, `TELEGRAM_*`, `AUTH_STATE_SECRET`, `BIBLE_DB_PASSWORD`) — nothing is baked into the browser bundle.
 
 ## Project Structure
 
@@ -141,7 +139,7 @@ src/
 db/schema.sql                     # Canonical Postgres schema
 .github/workflows/deploy.yml      # CI/CD
 Dockerfile                        # Multi-stage Next.js standalone build
-docker-compose.yml                # `app` service on 127.0.0.1:3001
+docker-compose.yml                # `app` (127.0.0.1:3001) + `db` (bible-db Postgres)
 ```
 
 ## Bible Data
