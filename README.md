@@ -2,8 +2,6 @@
 
 A personal Bible reading tracker built with Next.js, React, and Postgres. Track daily reading progress, visualize completion across all 66 books, and stay on pace to read the entire Bible.
 
-Live at [bible.mncoleman.com](https://bible.mncoleman.com).
-
 ## Features
 
 - **Daily Tracking** — Log Bible reading passages with book/chapter/verse selects, see daily progress toward your verse goal
